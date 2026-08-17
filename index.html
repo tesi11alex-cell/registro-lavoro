@@ -501,14 +501,14 @@ auth.onAuthStateChanged(function(user){
     if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';
     const comune=p.comune||'';
     const via=p.via!==undefined?p.via:(p.sito||'');
-    return {id:p.id||uid(),cliente:p.cliente||'',comune,via,pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',anticipo:p.anticipo||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',fatta:!!p.fatta};
+    return {id:p.id||uid(),cliente:p.cliente||'',comune,via,pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',fatta:!!p.fatta};
   }
   function normalizeCandidatura(c){return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata}}
   function colorizePriority(sel){const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};sel.style.color=map[sel.value]||''}
   function payClass(stato){return stato==='Pagato'?'paid':stato==='Acconto'?'deposit':'unpaid'}
   function moneyNumber(v){const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:0}
-  function moneyTotal(a,b){
-    const n=moneyNumber(a)+moneyNumber(b);
+  function moneyTotal(anticipati,parcella,accontoCliente){
+    const n=moneyNumber(anticipati)+moneyNumber(parcella)-moneyNumber(accontoCliente);
     return Number.isInteger(n)?String(n):n.toFixed(2);
   }
 
@@ -521,20 +521,20 @@ auth.onAuthStateChanged(function(user){
       <td class="num-col"><div class="rownum-wrap">
         <div class="rownum">${index+1}</div>
         <div class="reorder-controls">
-          <button class="move-btn" type="button" data-action="moveUp" title="Sposta su">↑</button>
-          <button class="move-btn" type="button" data-action="moveDown" title="Sposta giù">↓</button>
+          <button class="move-btn" type="button" tabindex="-1" data-action="moveUp" title="Sposta su">↑</button>
+          <button class="move-btn" type="button" tabindex="-1" data-action="moveDown" title="Sposta giù">↓</button>
         </div>
       </div></td>
-      <td class="side ${side}"><div class="client-wrap detail-trigger" data-action="openDetails"><input class="archive-check" type="checkbox" data-action="toggleArchive" ${p.fatta?'checked':''} title="${p.fatta?'Riporta tra le pratiche attive':'Archivia pratica'}"><textarea class="compact-textarea" data-f="cliente" placeholder="Nome cliente">${esc(p.cliente)}</textarea></div></td>
+      <td class="side ${side}"><div class="client-wrap detail-trigger" data-action="openDetails"><input class="archive-check" type="checkbox" tabindex="-1" data-action="toggleArchive" ${p.fatta?'checked':''} title="${p.fatta?'Riporta tra le pratiche attive':'Archivia pratica'}"><textarea class="compact-textarea" data-f="cliente" placeholder="Nome cliente">${esc(p.cliente)}</textarea></div></td>
       <td class="detail-trigger" data-action="openDetails"><input type="text" data-f="comune" value="${esc(p.comune)}" placeholder="Comune"></td>
       <td class="detail-trigger" data-action="openDetails"><textarea class="compact-textarea" data-f="via" placeholder="Via / indirizzo">${esc(p.via)}</textarea></td>
-      <td><div class="practice-open" data-action="openDetails"><textarea data-f="pratica" placeholder="Tipo pratica" title="Clicca per aprire i dettagli">${esc(p.pratica)}</textarea><button class="practice-chevron" type="button" data-action="toggleDetails" title="${openPracticeId===p.id?'Chiudi dettagli':'Apri dettagli'}">${openPracticeId===p.id?'▴':'▾'}</button></div></td>
+      <td><div class="practice-open" data-action="openDetails"><textarea data-f="pratica" placeholder="Tipo pratica" title="Clicca per aprire i dettagli">${esc(p.pratica)}</textarea><button class="practice-chevron" type="button" tabindex="-1" data-action="toggleDetails" title="${openPracticeId===p.id?'Chiudi dettagli':'Apri dettagli'}">${openPracticeId===p.id?'▴':'▾'}</button></div></td>
       <td><select data-f="priorita" class="priority-select"><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option></select></td>
-      <td><button class="del-btn" data-action="del" title="Elimina">✕</button></td>`;
+      <td><button class="del-btn" tabindex="-1" data-action="del" title="Elimina">✕</button></td>`;
     colorizePriority(tr.querySelector('.priority-select'));
 
     const details=document.createElement('tr');details.dataset.id=p.id;details.className='notes-detail'+(openPracticeId===p.id?' open':'');
-    details.innerHTML=`<td colspan="7"><div class="details-panel"><button class="detail-close-btn" type="button" data-action="closeDetails" title="Chiudi dettagli">▲</button><div class="details-layout">
+    details.innerHTML=`<td colspan="7"><div class="details-panel"><button class="detail-close-btn" type="button" tabindex="-1" data-action="closeDetails" title="Chiudi dettagli">▲</button><div class="details-layout">
       <div class="details-notes">
         <div class="details-title">Note</div>
         <textarea data-f="note" placeholder="Scrivi qui tutte le note della pratica...">${esc(p.note)}</textarea>
@@ -550,8 +550,12 @@ auth.onAuthStateChanged(function(user){
         <div class="detail-box">
           <div class="money-stack">
             <div class="money-row">
-              <span class="field-label">Soldi anticipati</span>
+              <span class="field-label">Soldi anticipati da me</span>
               <div class="money-wrap"><input type="number" data-f="anticipo" value="${esc(p.anticipo)}" placeholder="0" step="0.01"><span class="money-suffix">€</span></div>
+            </div>
+            <div class="money-row">
+              <span class="field-label">Soldi dati in acconto dal cliente</span>
+              <div class="money-wrap"><input type="number" data-f="accontoCliente" value="${esc(p.accontoCliente)}" placeholder="0" step="0.01"><span class="money-suffix">€</span></div>
             </div>
             <div class="money-row">
               <span class="field-label">Parcella Geometra</span>
@@ -559,7 +563,7 @@ auth.onAuthStateChanged(function(user){
             </div>
             <div class="money-row">
               <span class="field-label">Totale</span>
-              <div class="money-total-wrap"><input type="text" data-total-costi value="${moneyTotal(p.anticipo,p.parcellaGeometra)}" readonly tabindex="-1"><span class="money-suffix">€</span></div>
+              <div class="money-total-wrap"><input type="text" data-total-costi value="${moneyTotal(p.anticipo,p.parcellaGeometra,p.accontoCliente)}" readonly tabindex="-1"><span class="money-suffix">€</span></div>
             </div>
           </div>
         </div>
@@ -593,9 +597,9 @@ auth.onAuthStateChanged(function(user){
       const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza;
     }
     if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item);
-    if(f==='anticipo'||f==='parcellaGeometra'){
+    if(f==='anticipo'||f==='accontoCliente'||f==='parcellaGeometra'){
       const total=tr.querySelector('[data-total-costi]');
-      if(total)total.value=moneyTotal(item.anticipo,item.parcellaGeometra);
+      if(total)total.value=moneyTotal(item.anticipo,item.parcellaGeometra,item.accontoCliente);
     }
   }
   function handlePChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){if(openPracticeId===item.id)openPracticeId=null;item.fatta=e.target.checked;renderPratiche()}if(e.target.dataset.f==='statoPagamento'){item.statoPagamento=e.target.value;e.target.className='pay-select '+payClass(item.statoPagamento)}save('pratiche-data',pratiche,e.target.closest('[data-view="pratiche-archiviate"]')?statusPA:statusP)}
@@ -659,18 +663,18 @@ auth.onAuthStateChanged(function(user){
     }
   }
   [tbodyP,tbodyPA].forEach(tb=>{tb.addEventListener('input',handlePInput);tb.addEventListener('change',handlePChange);tb.addEventListener('click',handlePClick)});
-  document.getElementById('add-pratica').addEventListener('click',()=>{pratiche.push({id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',parcellaGeometra:'',statoPagamento:'Da saldare',note:'',fatta:false});renderPratiche();const clients=tbodyP.querySelectorAll('textarea[data-f="cliente"]');const last=clients[clients.length-1];if(last){last.focus();last.scrollIntoView({behavior:'smooth',block:'center'})}save('pratiche-data',pratiche,statusP)});
+  document.getElementById('add-pratica').addEventListener('click',()=>{pratiche.push({id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',accontoCliente:'',parcellaGeometra:'',statoPagamento:'Da saldare',note:'',fatta:false});renderPratiche();const clients=tbodyP.querySelectorAll('textarea[data-f="cliente"]');const last=clients[clients.length-1];if(last){last.focus();last.scrollIntoView({behavior:'smooth',block:'center'})}save('pratiche-data',pratiche,statusP)});
 
   function rowCandidatura(c,index){
     const tr=document.createElement('tr');tr.dataset.id=c.id;
     tr.innerHTML=`
       <td class="num-col"><div class="rownum">${index+1}</div></td>
-      <td><div class="client-wrap"><input class="archive-check" type="checkbox" data-action="toggleArchive" ${c.archiviata?'checked':''} title="${c.archiviata?'Riporta tra le candidature attive':'Archivia candidatura'}"><textarea data-f="lavoro" placeholder="Nome lavoro / ente">${esc(c.lavoro)}</textarea></div></td>
+      <td><div class="client-wrap"><input class="archive-check" type="checkbox" tabindex="-1" data-action="toggleArchive" ${c.archiviata?'checked':''} title="${c.archiviata?'Riporta tra le candidature attive':'Archivia candidatura'}"><textarea data-f="lavoro" placeholder="Nome lavoro / ente">${esc(c.lavoro)}</textarea></div></td>
       <td><input type="date" data-f="data" value="${esc(c.data)}"></td>
       <td><textarea data-f="posto" placeholder="Città / luogo">${esc(c.posto)}</textarea></td>
       <td class="notes-cell"><textarea data-f="note" placeholder="Note...">${esc(c.note)}</textarea></td>
       <td class="money-cell"><div class="money-wrap"><input type="number" data-f="proposta" value="${esc(c.proposta)}" placeholder="0" step="0.01"><span class="money-suffix">€</span></div></td>
-      <td><button class="del-btn" data-action="del" title="Elimina">✕</button></td>`;
+      <td><button class="del-btn" tabindex="-1" data-action="del" title="Elimina">✕</button></td>`;
     return tr;
   }
   function renderCandidature(){
@@ -706,15 +710,23 @@ auth.onAuthStateChanged(function(user){
       if(detail.key==='pratiche-data'){
         const parsed=JSON.parse(detail.value||'[]');
         if(Array.isArray(parsed)){
-          pratiche=parsed.map(normalizePratica);
-          renderPratiche();
+          const incoming=parsed.map(normalizePratica);
+          // Se è solo la conferma del nostro stesso salvataggio, non ridisegnare:
+          // così TAB e il cursore restano nella casella successiva.
+          if(JSON.stringify(incoming)!==JSON.stringify(pratiche)){
+            pratiche=incoming;
+            renderPratiche();
+          }
           statusP.textContent=statusPA.textContent='sincronizzato';
         }
       }else if(detail.key==='candidature-data'){
         const parsed=JSON.parse(detail.value||'[]');
         if(Array.isArray(parsed)){
-          candidature=parsed.map(normalizeCandidatura);
-          renderCandidature();
+          const incoming=parsed.map(normalizeCandidatura);
+          if(JSON.stringify(incoming)!==JSON.stringify(candidature)){
+            candidature=incoming;
+            renderCandidature();
+          }
           statusC.textContent=statusCA.textContent='sincronizzato';
         }
       }
