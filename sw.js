@@ -1,12 +1,12 @@
-const CACHE='registro-lavoro-v2';
+const CACHE='registro-lavoro-v3';
 const APP_SHELL=[
   './',
   './index.html',
-  './manifest.webmanifest',
+  './manifest-v3.webmanifest',
   './firebase-config.js',
-  './icon-180-v2.png',
-  './icon-192-v2.png',
-  './icon-512-v2.png'
+  './registro-icon-180-v3.png',
+  './registro-icon-192-v3.png',
+  './registro-icon-512-v3.png'
 ];
 
 self.addEventListener('install',event=>{
@@ -16,14 +16,16 @@ self.addEventListener('install',event=>{
 
 self.addEventListener('activate',event=>{
   event.waitUntil(
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+    caches.keys().then(keys=>Promise.all(
+      keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
+    ))
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch',event=>{
   const req=event.request;
-  if(req.method!=='GET')return;
+  if(req.method!=='GET') return;
   const url=new URL(req.url);
 
   if(url.origin===self.location.origin){
@@ -38,8 +40,10 @@ self.addEventListener('fetch',event=>{
       return;
     }
 
-    // Network-first for manifest and icons so updates are picked up quickly.
-    if(url.pathname.endsWith('manifest.webmanifest') || /icon-\d+-v\d+\.png$/.test(url.pathname)){
+    if(
+      url.pathname.endsWith('manifest-v3.webmanifest') ||
+      url.pathname.includes('registro-icon-')
+    ){
       event.respondWith(
         fetch(req).then(res=>{
           const copy=res.clone();
