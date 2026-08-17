@@ -620,7 +620,7 @@ auth.onAuthStateChanged(function(user){
     }
   }
   [tbodyP,tbodyPA].forEach(tb=>{tb.addEventListener('input',handlePInput);tb.addEventListener('change',handlePChange);tb.addEventListener('click',handlePClick)});
-  document.getElementById('add-pratica').addEventListener('click',()=>{pratiche.unshift({id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',statoPagamento:'Da saldare',note:'',fatta:false});renderPratiche();const first=tbodyP.querySelector('textarea[data-f="cliente"]');if(first)first.focus();save('pratiche-data',pratiche,statusP)});
+  document.getElementById('add-pratica').addEventListener('click',()=>{pratiche.push({id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',statoPagamento:'Da saldare',note:'',fatta:false});renderPratiche();const clients=tbodyP.querySelectorAll('textarea[data-f="cliente"]');const last=clients[clients.length-1];if(last){last.focus();last.scrollIntoView({behavior:'smooth',block:'center'})}save('pratiche-data',pratiche,statusP)});
 
   function rowCandidatura(c,index){
     const tr=document.createElement('tr');tr.dataset.id=c.id;
