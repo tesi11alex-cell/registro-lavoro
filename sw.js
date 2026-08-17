@@ -1,4 +1,4 @@
-const CACHE='registro-lavoro-v3';
+const CACHE='registro-lavoro-v4';
 const APP_SHELL=[
   './',
   './index.html',

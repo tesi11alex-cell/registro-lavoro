@@ -122,7 +122,9 @@ select{cursor:pointer}
 .notes-detail{display:none;background:#0b0f13;border-bottom:1px solid var(--line)}
 .notes-detail.open{display:table-row}
 .notes-detail td{height:auto;padding:0 14px 14px 76px;border-left:3px solid transparent}
-.details-panel{border-top:1px dashed #29313a;padding:12px 8px 4px}
+.details-panel{border-top:1px dashed #29313a;padding:12px 42px 4px 8px;position:relative}
+.detail-close-btn{position:absolute;right:8px;top:10px;width:26px;height:26px;border:1px solid var(--line);border-radius:5px;background:var(--panel2);color:var(--dim);cursor:pointer;font-size:12px;line-height:22px}
+.detail-close-btn:hover{color:var(--text);border-color:#3a424d;background:#141a20}
 .details-layout{display:grid;grid-template-columns:minmax(360px,1.45fr) minmax(430px,1fr);gap:22px;align-items:start}
 .details-notes .details-title,.details-right .details-title{margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
 .details-notes textarea{min-height:138px;max-height:320px;background:var(--panel2);border-color:#242b33}
@@ -455,6 +457,7 @@ auth.onAuthStateChanged(function(user){
   const S=window.storage;
   let pratiche=[];
   let candidature=[];
+  let openPracticeId=null;
 
   const tbodyP=document.getElementById('tbody-pratiche');
   const tbodyPA=document.getElementById('tbody-pratiche-archiviate');
@@ -514,13 +517,13 @@ auth.onAuthStateChanged(function(user){
       <td class="side ${side}"><div class="client-wrap detail-trigger" data-action="openDetails"><input class="archive-check" type="checkbox" data-action="toggleArchive" ${p.fatta?'checked':''} title="${p.fatta?'Riporta tra le pratiche attive':'Archivia pratica'}"><textarea class="compact-textarea" data-f="cliente" placeholder="Nome cliente">${esc(p.cliente)}</textarea></div></td>
       <td class="detail-trigger" data-action="openDetails"><input type="text" data-f="comune" value="${esc(p.comune)}" placeholder="Comune"></td>
       <td class="detail-trigger" data-action="openDetails"><textarea class="compact-textarea" data-f="via" placeholder="Via / indirizzo">${esc(p.via)}</textarea></td>
-      <td><div class="practice-open" data-action="openDetails"><textarea data-f="pratica" placeholder="Tipo pratica" title="Clicca per aprire i dettagli">${esc(p.pratica)}</textarea><button class="practice-chevron" type="button" data-action="toggleDetails" title="Apri dettagli">▾</button></div></td>
+      <td><div class="practice-open" data-action="openDetails"><textarea data-f="pratica" placeholder="Tipo pratica" title="Clicca per aprire i dettagli">${esc(p.pratica)}</textarea><button class="practice-chevron" type="button" data-action="toggleDetails" title="${openPracticeId===p.id?'Chiudi dettagli':'Apri dettagli'}">${openPracticeId===p.id?'▴':'▾'}</button></div></td>
       <td><select data-f="priorita" class="priority-select"><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option></select></td>
       <td><button class="del-btn" data-action="del" title="Elimina">✕</button></td>`;
     colorizePriority(tr.querySelector('.priority-select'));
 
-    const details=document.createElement('tr');details.dataset.id=p.id;details.className='notes-detail';
-    details.innerHTML=`<td colspan="7"><div class="details-panel"><div class="details-layout">
+    const details=document.createElement('tr');details.dataset.id=p.id;details.className='notes-detail'+(openPracticeId===p.id?' open':'');
+    details.innerHTML=`<td colspan="7"><div class="details-panel"><button class="detail-close-btn" type="button" data-action="closeDetails" title="Chiudi dettagli">▲</button><div class="details-layout">
       <div class="details-notes">
         <div class="details-title">Note</div>
         <textarea data-f="note" placeholder="Scrivi qui tutte le note della pratica...">${esc(p.note)}</textarea>
@@ -556,7 +559,7 @@ auth.onAuthStateChanged(function(user){
 
   function updateDeadlineVisual(tr,item){const cell=tr.children[1];cell.classList.remove('overdue','soon');if(item.fatta)return;const scad=daysUntil(item.scadenza);if(scad!==null){if(scad<0)cell.classList.add('overdue');else if(scad<=7)cell.classList.add('soon')}}
   function handlePInput(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;const f=e.target.dataset.f;if(!f)return;item[f]=e.target.value;if(f==='priorita')colorizePriority(e.target);if(f==='statoPagamento')e.target.className='pay-select '+payClass(item.statoPagamento);if((f==='presentata'||f==='durataScadenza')&&item.durataScadenza&&item.presentata){item.scadenza=addYears(item.presentata,item.durataScadenza);const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza}if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item)}
-  function handlePChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){item.fatta=e.target.checked;renderPratiche()}if(e.target.dataset.f==='statoPagamento'){item.statoPagamento=e.target.value;e.target.className='pay-select '+payClass(item.statoPagamento)}save('pratiche-data',pratiche,e.target.closest('[data-view="pratiche-archiviate"]')?statusPA:statusP)}
+  function handlePChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){if(openPracticeId===item.id)openPracticeId=null;item.fatta=e.target.checked;renderPratiche()}if(e.target.dataset.f==='statoPagamento'){item.statoPagamento=e.target.value;e.target.className='pay-select '+payClass(item.statoPagamento)}save('pratiche-data',pratiche,e.target.closest('[data-view="pratiche-archiviate"]')?statusPA:statusP)}
   function practiceGroup(item){return pratiche.filter(p=>p.fatta===item.fatta)}
   function movePractice(id,action){
     const item=pratiche.find(p=>p.id===id);if(!item)return;
@@ -579,22 +582,41 @@ auth.onAuthStateChanged(function(user){
       [pratiche[a],pratiche[b]]=[pratiche[b],pratiche[a]];
     }
   }
+  function setOpenPractice(id){
+    openPracticeId=id||null;
+    [tbodyP,tbodyPA].forEach(tb=>{
+      tb.querySelectorAll('.practice-main-row').forEach(main=>{
+        const detail=main.nextElementSibling;
+        const isOpen=!!openPracticeId && main.dataset.id===openPracticeId;
+        if(detail&&detail.classList.contains('notes-detail'))detail.classList.toggle('open',isOpen);
+        const btn=main.querySelector('.practice-chevron');
+        if(btn){
+          btn.textContent=isOpen?'▴':'▾';
+          btn.title=isOpen?'Chiudi dettagli':'Apri dettagli';
+        }
+      });
+    });
+  }
+
   function handlePClick(e){
     const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
     const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
     const actionEl=e.target.closest('[data-action]');
     const a=actionEl?actionEl.dataset.action:'';
     if(a==='del'){
+      if(openPracticeId===tr.dataset.id)openPracticeId=null;
       pratiche=pratiche.filter(x=>x.id!==tr.dataset.id);renderPratiche();save('pratiche-data',pratiche,statusP);
     }else if(['moveTop','moveUp','moveDown'].includes(a)){
       movePractice(item.id,a);renderPratiche();save('pratiche-data',pratiche,item.fatta?statusPA:statusP);
-    }else if(a==='toggleDetails'||a==='openDetails'){
-      const detail=tr.nextElementSibling;
-      if(detail&&detail.classList.contains('notes-detail')){
-        if(a==='openDetails'&&detail.classList.contains('open')&&['TEXTAREA','INPUT'].includes(e.target.tagName))return;
-        detail.classList.toggle('open');
-        const btn=tr.querySelector('.practice-chevron');if(btn)btn.textContent=detail.classList.contains('open')?'▴':'▾';
-      }
+    }else if(a==='closeDetails'){
+      setOpenPractice(null);
+    }else if(a==='toggleDetails'){
+      setOpenPractice(openPracticeId===item.id?null:item.id);
+    }else if(a==='openDetails'){
+      // Se si sta scrivendo/selezionando dentro la pratica già aperta, non chiuderla.
+      if(openPracticeId===item.id && ['TEXTAREA','INPUT','SELECT'].includes(e.target.tagName))return;
+      // Clic su un'altra pratica: apre questa e chiude automaticamente quella precedente.
+      if(openPracticeId!==item.id)setOpenPractice(item.id);
     }
   }
   [tbodyP,tbodyPA].forEach(tb=>{tb.addEventListener('input',handlePInput);tb.addEventListener('change',handlePChange);tb.addEventListener('click',handlePClick)});
