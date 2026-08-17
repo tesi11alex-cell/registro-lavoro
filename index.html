@@ -115,7 +115,13 @@ select{cursor:pointer}
 .practice-open textarea{min-height:40px;height:40px;max-height:90px;resize:vertical;cursor:text}
 .practice-chevron{flex:0 0 20px;height:24px;margin-top:5px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--dim);cursor:pointer;font-size:10px}
 .practice-chevron:hover{color:var(--text);border-color:#3a424d}
+.money-stack{display:flex;flex-direction:column;gap:9px}
+.money-row{display:flex;flex-direction:column;gap:5px}
+.money-row .field-label{line-height:1.2}
 .money-wrap{display:flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid transparent;border-radius:5px;padding-right:8px}
+.money-total-wrap{display:flex;align-items:center;gap:5px;background:rgba(193,138,75,.10);border:1px solid #6e5233;border-radius:5px;padding-right:8px}
+.money-total-wrap input{background:transparent!important;border:none!important;padding-right:2px;color:#e2b57d!important;font-weight:700}
+.money-total-wrap .money-suffix{color:#e2b57d}
 .money-wrap:focus-within{border-color:#343c47}
 .money-wrap input{background:transparent!important;border:none!important;padding-right:2px}
 .money-suffix{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);white-space:nowrap}
@@ -495,11 +501,16 @@ auth.onAuthStateChanged(function(user){
     if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';
     const comune=p.comune||'';
     const via=p.via!==undefined?p.via:(p.sito||'');
-    return {id:p.id||uid(),cliente:p.cliente||'',comune,via,pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',anticipo:p.anticipo||'',statoPagamento:stato,note:p.note||'',fatta:!!p.fatta};
+    return {id:p.id||uid(),cliente:p.cliente||'',comune,via,pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',anticipo:p.anticipo||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',fatta:!!p.fatta};
   }
   function normalizeCandidatura(c){return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata}}
   function colorizePriority(sel){const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};sel.style.color=map[sel.value]||''}
   function payClass(stato){return stato==='Pagato'?'paid':stato==='Acconto'?'deposit':'unpaid'}
+  function moneyNumber(v){const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:0}
+  function moneyTotal(a,b){
+    const n=moneyNumber(a)+moneyNumber(b);
+    return Number.isInteger(n)?String(n):n.toFixed(2);
+  }
 
   function rowPratica(p,index){
     const frag=document.createDocumentFragment();
@@ -537,8 +548,20 @@ auth.onAuthStateChanged(function(user){
           </div>
         </div>
         <div class="detail-box">
-          <div class="details-title">Anticipo</div>
-          <div class="money-wrap"><input type="number" data-f="anticipo" value="${esc(p.anticipo)}" placeholder="0" step="0.01"><span class="money-suffix">€</span></div>
+          <div class="money-stack">
+            <div class="money-row">
+              <span class="field-label">Soldi anticipati</span>
+              <div class="money-wrap"><input type="number" data-f="anticipo" value="${esc(p.anticipo)}" placeholder="0" step="0.01"><span class="money-suffix">€</span></div>
+            </div>
+            <div class="money-row">
+              <span class="field-label">Parcella Geometra</span>
+              <div class="money-wrap"><input type="number" data-f="parcellaGeometra" value="${esc(p.parcellaGeometra)}" placeholder="0" step="0.01"><span class="money-suffix">€</span></div>
+            </div>
+            <div class="money-row">
+              <span class="field-label">Totale</span>
+              <div class="money-total-wrap"><input type="text" data-total-costi value="${moneyTotal(p.anticipo,p.parcellaGeometra)}" readonly tabindex="-1"><span class="money-suffix">€</span></div>
+            </div>
+          </div>
         </div>
         <div class="detail-box">
           <div class="details-title">Pagamento</div>
@@ -558,7 +581,23 @@ auth.onAuthStateChanged(function(user){
   }
 
   function updateDeadlineVisual(tr,item){const cell=tr.children[1];cell.classList.remove('overdue','soon');if(item.fatta)return;const scad=daysUntil(item.scadenza);if(scad!==null){if(scad<0)cell.classList.add('overdue');else if(scad<=7)cell.classList.add('soon')}}
-  function handlePInput(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;const f=e.target.dataset.f;if(!f)return;item[f]=e.target.value;if(f==='priorita')colorizePriority(e.target);if(f==='statoPagamento')e.target.className='pay-select '+payClass(item.statoPagamento);if((f==='presentata'||f==='durataScadenza')&&item.durataScadenza&&item.presentata){item.scadenza=addYears(item.presentata,item.durataScadenza);const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza}if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item)}
+  function handlePInput(e){
+    const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
+    const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
+    const f=e.target.dataset.f;if(!f)return;
+    item[f]=e.target.value;
+    if(f==='priorita')colorizePriority(e.target);
+    if(f==='statoPagamento')e.target.className='pay-select '+payClass(item.statoPagamento);
+    if((f==='presentata'||f==='durataScadenza')&&item.durataScadenza&&item.presentata){
+      item.scadenza=addYears(item.presentata,item.durataScadenza);
+      const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza;
+    }
+    if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item);
+    if(f==='anticipo'||f==='parcellaGeometra'){
+      const total=tr.querySelector('[data-total-costi]');
+      if(total)total.value=moneyTotal(item.anticipo,item.parcellaGeometra);
+    }
+  }
   function handlePChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){if(openPracticeId===item.id)openPracticeId=null;item.fatta=e.target.checked;renderPratiche()}if(e.target.dataset.f==='statoPagamento'){item.statoPagamento=e.target.value;e.target.className='pay-select '+payClass(item.statoPagamento)}save('pratiche-data',pratiche,e.target.closest('[data-view="pratiche-archiviate"]')?statusPA:statusP)}
   function practiceGroup(item){return pratiche.filter(p=>p.fatta===item.fatta)}
   function movePractice(id,action){
@@ -620,7 +659,7 @@ auth.onAuthStateChanged(function(user){
     }
   }
   [tbodyP,tbodyPA].forEach(tb=>{tb.addEventListener('input',handlePInput);tb.addEventListener('change',handlePChange);tb.addEventListener('click',handlePClick)});
-  document.getElementById('add-pratica').addEventListener('click',()=>{pratiche.push({id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',statoPagamento:'Da saldare',note:'',fatta:false});renderPratiche();const clients=tbodyP.querySelectorAll('textarea[data-f="cliente"]');const last=clients[clients.length-1];if(last){last.focus();last.scrollIntoView({behavior:'smooth',block:'center'})}save('pratiche-data',pratiche,statusP)});
+  document.getElementById('add-pratica').addEventListener('click',()=>{pratiche.push({id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',parcellaGeometra:'',statoPagamento:'Da saldare',note:'',fatta:false});renderPratiche();const clients=tbodyP.querySelectorAll('textarea[data-f="cliente"]');const last=clients[clients.length-1];if(last){last.focus();last.scrollIntoView({behavior:'smooth',block:'center'})}save('pratiche-data',pratiche,statusP)});
 
   function rowCandidatura(c,index){
     const tr=document.createElement('tr');tr.dataset.id=c.id;
