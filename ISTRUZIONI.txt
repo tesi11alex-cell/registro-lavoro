@@ -1,0 +1,35 @@
+REGISTRO LAVORO — PACCHETTO PWA
+
+File da caricare nella root del repository GitHub:
+- index.html
+- firebase-config.js
+- manifest.webmanifest
+- sw.js
+- icon-180.png
+- icon-192.png
+- icon-512.png
+
+Firebase:
+1. Crea un nuovo progetto Firebase, ad esempio "registro-lavoro-alessandro".
+2. Crea una Web App.
+3. Copia la configurazione Firebase nel file firebase-config.js.
+4. Authentication > Sign-in method > abilita Google.
+5. Authentication > Settings > Authorized domains:
+   aggiungi tesi11alex-cell.github.io
+6. Firestore Database > crea il database.
+7. Firestore > Rules: incolla il contenuto di firestore.rules.txt e pubblica.
+
+GitHub:
+1. Crea un repository, ad esempio "registro-lavoro".
+2. Carica nella root tutti i file del pacchetto.
+3. Settings > Pages > Deploy from a branch.
+4. Branch: main, cartella / (root), quindi Save.
+
+Installazione:
+- PC Chrome/Edge: apri l'indirizzo GitHub Pages e usa "Installa app".
+- iPad/iPhone: apri l'indirizzo con Safari > Condividi > Aggiungi alla schermata Home.
+- Accedi sempre con lo stesso account Google per vedere gli stessi dati.
+
+Nota sicurezza:
+Le regole Firestore incluse consentono a ogni account autenticato di leggere e modificare
+solo i documenti associati al proprio UID.
