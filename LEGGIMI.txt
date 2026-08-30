@@ -1,0 +1,22 @@
+GESTIONALE REGISTRO LAVORO V4
+
+Sostituisci nel repository:
+- index.html
+- sw.js
+
+Aggiungi:
+- gestionale-v4.css
+- auth-v4.js
+- gestionale-v4.js
+
+NON modificare:
+- firebase-config.js
+- firestore.rules.txt
+- manifest-v3.webmanifest
+- icone
+
+I dati esistenti restano nelle stesse chiavi Firebase:
+- pratiche-data
+- candidature-data
+
+La checklist viene salvata all'interno di ciascuna pratica esistente.

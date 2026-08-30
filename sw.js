@@ -1,7 +1,10 @@
-const CACHE='registro-lavoro-v8';
+const CACHE='registro-lavoro-v9';
 const APP_SHELL=[
   './',
   './index.html',
+  './gestionale-v4.css',
+  './auth-v4.js',
+  './gestionale-v4.js',
   './manifest-v3.webmanifest',
   './firebase-config.js',
   './registro-icon-180-v3.png',
@@ -42,7 +45,10 @@ self.addEventListener('fetch',event=>{
 
     if(
       url.pathname.endsWith('manifest-v3.webmanifest') ||
-      url.pathname.includes('registro-icon-')
+      url.pathname.includes('registro-icon-') ||
+      url.pathname.endsWith('gestionale-v4.css') ||
+      url.pathname.endsWith('auth-v4.js') ||
+      url.pathname.endsWith('gestionale-v4.js')
     ){
       event.respondWith(
         fetch(req).then(res=>{
