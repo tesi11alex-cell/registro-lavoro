@@ -16,11 +16,18 @@ function normalizeItem(i){return{id:i?.id||uid(),text:i?.text||'',done:!!i?.done
 function normalizeChecklistGroup(c){return{id:c?.id||uid(),name:c?.name||'Checklist',templateId:c?.templateId||'',items:Array.isArray(c?.items)?c.items.map(normalizeItem):[],sent:!!c?.sent,sentAt:c?.sentAt||'',workDate:c?.workDate||c?.sentAt||todayISO(),protocol:c?.protocol||'',protocolDate:c?.protocolDate||'',sendNote:c?.sendNote||''}}
 function normalizeHistory(h){return{id:h?.id||uid(),type:h?.type||'note',checklistId:h?.checklistId||'',title:h?.title||'',date:h?.date||'',protocol:h?.protocol||'',protocolDate:h?.protocolDate||'',note:h?.note||''}}
 function normalizeDeadline(d){return{id:d?.id||uid(),date:d?.date||'',reason:d?.reason||'',done:!!d?.done,completedAt:d?.completedAt||''}}
+function normalizeInfoRow(r){return{id:r?.id||uid(),kind:r?.kind||'Pratica presentata',object:r?.object||'',practiceType:r?.practiceType||'',date:r?.date||'',protocol:r?.protocol||'',termType:r?.termType||'',expiryDate:r?.expiryDate||''}}
 function migrateLegacyChecklist(p){if(Array.isArray(p.checklists))return p.checklists.map(normalizeChecklistGroup);if(Array.isArray(p.checklist)&&p.checklist.length){return[normalizeChecklistGroup({name:'Checklist pratica',items:p.checklist.map(i=>({id:i.id,text:i.text,done:i.done}))})]}return[]}
 function migrateDeadlines(p){if(Array.isArray(p.deadlines)&&p.deadlines.length)return p.deadlines.map(normalizeDeadline);if(p.scadenza)return[normalizeDeadline({date:p.scadenza,reason:'Scadenza principale'})];return[]}
-function nearestDeadline(p){const list=(p.deadlines||[]).filter(d=>d.date&&!d.done).slice().sort((a,b)=>a.date.localeCompare(b.date));return list[0]||null}
+function practiceTerms(p){
+  const manual=(p.deadlines||[]).filter(d=>d.date&&!d.done).map(d=>({id:d.id,date:d.date,reason:d.reason||'Termine pratica',source:'manual'}));
+  const structured=(p.infoRows||[]).filter(r=>r.expiryDate).map(r=>({id:'info-'+r.id,date:r.expiryDate,reason:r.object||r.practiceType||r.kind||'Termine pratica',source:'info'}));
+  const seen=new Set();
+  return [...manual,...structured].filter(x=>{const k=x.date+'|'+x.reason.toLocaleLowerCase('it');if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.date.localeCompare(b.date));
+}
+function nearestDeadline(p){return practiceTerms(p)[0]||null}
 function syncLegacyScadenza(p){const n=nearestDeadline(p);p.scadenza=n?.date||''}
-function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';const out={id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',deadlines:migrateDeadlines(p),anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',infoCatastali:p.infoCatastali||'',fatta:!!p.fatta,checklists:migrateLegacyChecklist(p),history:Array.isArray(p.history)?p.history.map(normalizeHistory):[]};syncLegacyScadenza(out);return out}
+function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';const out={id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',deadlines:migrateDeadlines(p),anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',infoCatastali:p.infoCatastali||'',faseLavoro:p.faseLavoro||'',infoRows:Array.isArray(p.infoRows)?p.infoRows.map(normalizeInfoRow):[],fatta:!!p.fatta,checklists:migrateLegacyChecklist(p),history:Array.isArray(p.history)?p.history.map(normalizeHistory):[]};syncLegacyScadenza(out);return out}
 function normalizeTemplate(t){return{id:t?.id||uid(),name:t?.name||'Checklist',items:Array.isArray(t?.items)?t.items.map(i=>({id:i?.id||uid(),text:i?.text||''})):[]}}
 function normalizeCandidatura(c){return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata}}
 function colorizePriority(sel){const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};sel.style.color=map[sel.value]||''}
@@ -65,12 +72,50 @@ function handleCClick(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)
 $('add-candidatura').addEventListener('click',()=>{candidature.unshift({id:uid(),lavoro:'',data:'',posto:'',proposta:'',note:'',archiviata:false});renderCandidature();save('candidature-data',candidature,statusC);const f=tbodyC.querySelector('textarea[data-f="lavoro"]');if(f)f.focus()});
 
 function deadlineStatusDate(date){const d=daysUntil(date);if(d===null)return{label:'—',cls:'normal'};if(d<0)return{label:`Scaduta ${Math.abs(d)} gg`,cls:'overdue'};if(d===0)return{label:'Oggi',cls:'soon'};if(d<=7)return{label:`${d} gg`,cls:'soon'};return{label:`${d} gg`,cls:'normal'}}
-function sortedDeadlines(){const out=[];pratiche.filter(p=>!p.fatta).forEach(p=>(p.deadlines||[]).filter(d=>d.date&&!d.done).forEach(d=>out.push({practice:p,deadline:d,date:d.date,reason:d.reason||'Scadenza'})));return out.sort((a,b)=>a.date.localeCompare(b.date))}
+function remainingText(date){
+  if(!date)return'—';
+  const end=new Date(date+'T12:00:00'),now=new Date();
+  const start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12);
+  if(Number.isNaN(end.getTime()))return'—';
+  if(end<start){const d=Math.ceil((start-end)/86400000);return`scaduto da ${d} gg`}
+  let months=(end.getFullYear()-start.getFullYear())*12+(end.getMonth()-start.getMonth());
+  let anchor=new Date(start.getFullYear(),start.getMonth()+months,start.getDate(),12);
+  if(anchor>end){months--;anchor=new Date(start.getFullYear(),start.getMonth()+months,start.getDate(),12)}
+  const days=Math.max(0,Math.round((end-anchor)/86400000));
+  const years=Math.floor(months/12),remMonths=months%12;
+  const parts=[];
+  if(years)parts.push(`${years} ${years===1?'anno':'anni'}`);
+  if(remMonths)parts.push(`${remMonths} ${remMonths===1?'mese':'mesi'}`);
+  if(!years&&(!remMonths||days))parts.push(`${days} gg`);
+  return 'tra '+parts.slice(0,2).join(' e ');
+}
+
+function sortedDeadlines(){const out=[];pratiche.filter(p=>!p.fatta).forEach(p=>practiceTerms(p).forEach(d=>out.push({practice:p,deadline:d,date:d.date,reason:d.reason||'Termine pratica'})));return out.sort((a,b)=>a.date.localeCompare(b.date))}
 function openManager(id){managerPracticeId=id;const p=pratiche.find(x=>x.id===id&&!x.fatta);managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';renderManager();goTo('gestione')}
 function openPracticeContext(id){const p=pratiche.find(x=>x.id===id);if(!p)return;if(p.fatta){goTo('archivio');setOpenPractice(id)}else openManager(id)}
-function renderDashboardPractices(){const host=$('dashboard-practices'),active=pratiche.filter(p=>!p.fatta);$('dashboard-practice-count').textContent=active.length===1?'1 pratica attiva':`${active.length} pratiche attive`;if(!active.length){host.innerHTML='<div class="manager-empty">Nessuna pratica attiva.</div>';return}const groups=[{key:'Alta',label:'Priorità alta',cls:'high'},{key:'Media',label:'Priorità media',cls:'medium'},{key:'Bassa',label:'Priorità bassa',cls:'low'}];host.innerHTML=groups.map(g=>{const items=active.filter(p=>p.priorita===g.key);if(!items.length)return'';return`<div class="priority-group"><div class="priority-group-title"><span class="priority-name ${g.cls}">${g.label}</span><span>${items.length}</span></div>${items.map(p=>`<div class="dashboard-practice-row"><div class="dash-client">${esc(p.cliente||'Senza cliente')}</div><div class="dash-practice">${esc(p.pratica||'Pratica senza titolo')}</div><div class="dash-address">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div><div class="dash-payment"><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></div><div class="dash-open"><button class="btn" type="button" data-dashboard-open="${p.id}">Apri</button></div></div>`).join('')}</div>`}).join('');host.querySelectorAll('[data-dashboard-open]').forEach(b=>b.addEventListener('click',()=>openManager(b.dataset.dashboardOpen)))}
+function renderDashboardPractices(){
+  const host=$('dashboard-practices'),active=pratiche.filter(p=>!p.fatta);
+  $('dashboard-practice-count').textContent=active.length===1?'1 pratica attiva':`${active.length} pratiche attive`;
+  if(!active.length){host.innerHTML='<div class="manager-empty">Nessuna pratica attiva.</div>';return}
+  const groups=[{key:'Alta',label:'Priorità alta',cls:'high'},{key:'Media',label:'Priorità media',cls:'medium'},{key:'Bassa',label:'Priorità bassa',cls:'low'}];
+  host.innerHTML=groups.map(g=>{
+    const items=active.filter(p=>p.priorita===g.key);if(!items.length)return'';
+    return `<div class="priority-group">
+      <div class="priority-group-title"><span class="priority-name ${g.cls}">${g.label}</span><span>${items.length}</span></div>
+      ${items.map(p=>`<div class="dashboard-practice-row dashboard-practice-row-v14">
+        <div class="dash-client">${esc(p.cliente||'Senza cliente')}</div>
+        <div class="dash-practice">${esc(p.pratica||'Pratica senza titolo')}</div>
+        <div class="dash-phase-v14">${p.faseLavoro?`<span class="phase-label-v14">Fase</span>${esc(p.faseLavoro)}`:'<span class="phase-empty-v14">Fase non indicata</span>'}</div>
+        <div class="dash-address">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div>
+        <div class="dash-payment"><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></div>
+        <div class="dash-open"><button class="btn" type="button" data-dashboard-open="${p.id}">Apri</button></div>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  host.querySelectorAll('[data-dashboard-open]').forEach(b=>b.addEventListener('click',()=>openManager(b.dataset.dashboardOpen)));
+}
 function renderDashboardDeadlines(){
-  const host=$('dashboard-deadlines'),list=sortedDeadlines().slice(0,10);
+  const host=$('dashboard-deadlines');if(!host)return;const list=sortedDeadlines().slice(0,10);
   $('dashboard-count').textContent=list.length?`${list.length} visualizzate`:'Nessuna scadenza';
   if(!list.length){host.innerHTML='<div class="manager-empty">Nessuna scadenza inserita.</div>';return}
   host.innerHTML=list.map(x=>{
@@ -176,6 +221,8 @@ function openDashboardPracticeCreator(){
       statoPagamento:$('newp-pagamento').value,
       note:'',
       infoCatastali:copySource?.infoCatastali||'',
+      faseLavoro:'',
+      infoRows:[],
       fatta:false,
       checklists:[],
       history:[]
@@ -189,7 +236,7 @@ function openDashboardPracticeCreator(){
   const first=$('newp-cliente');if(first)first.focus();
 }
 
-function renderDashboard(){renderDashboardPractices();renderDashboardDeadlines()}
+function renderDashboard(){renderDashboardPractices()}
 $('dashboard-add-practice').addEventListener('click',openDashboardPracticeCreator);
 function renderScadenze(){const tb=$('tbody-scadenze'),list=sortedDeadlines();if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="6">Nessuna scadenza inserita.</td></tr>';return}tb.innerHTML=list.map(x=>{const p=x.practice,s=deadlineStatusDate(x.date);return`<tr class="link-row" data-open-practice="${p.id}"><td class="mono">${formatDate(x.date)}</td><td>${esc(x.reason)}</td><td><strong>${esc(p.cliente||'—')}</strong></td><td>${esc(p.pratica||'—')}</td><td class="muted">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</td><td><span class="deadline-status ${s.cls}">${s.label}</span></td></tr>`}).join('');tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)))}
 function getClientList(){const map=new Map();pratiche.forEach(p=>{const name=(p.cliente||'').trim();if(!name)return;const key=name.toLocaleLowerCase('it');if(!map.has(key))map.set(key,{name,active:0,arch:0,last:null});const c=map.get(key);p.fatta?c.arch++:c.active++;c.last=p});return[...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'))}
@@ -292,13 +339,13 @@ function renderWorkingChecklists(p){const list=p.checklists.filter(c=>!c.sent);i
 
 function renderManagerDeadlinesEditor(p){
   const list=(p.deadlines||[]).filter(d=>!d.done);
-  return `<div class="note-deadlines-v13">
-    ${list.length?list.map(d=>`<div class="note-deadline-row-v13" data-manager-deadline="${d.id}">
-      <input class="deadline-done-v13" type="checkbox" data-md-done="${d.id}" title="Completa e sposta in storia">
+  return `<div class="manual-terms-v14">
+    ${list.length?list.map(d=>`<div class="manual-term-row-v14" data-manager-deadline="${d.id}">
+      <input type="text" data-md-f="reason" value="${esc(d.reason)}" placeholder="Motivo / termine">
       <input type="date" data-md-f="date" value="${esc(d.date)}">
-      <input type="text" data-md-f="reason" value="${esc(d.reason)}" placeholder="Motivo della scadenza">
+      <span class="manual-term-remaining-v14">${d.date?esc(remainingText(d.date)):'—'}</span>
       <button class="del-btn" type="button" data-md-delete="${d.id}">✕</button>
-    </div>`).join(''):'<div class="manager-deadlines-empty">Nessuna scadenza attiva.</div>'}
+    </div>`).join(''):'<div class="manual-term-empty-v14">Nessun termine manuale.</div>'}
   </div>`;
 }
 
@@ -366,6 +413,49 @@ function renderChecklistFooter(p){
   </div>`;
 }
 
+function renderPracticeInfoRows(p){
+  const rows=p.infoRows||[];
+  const kinds=['Pratica presentata','Integrazione richiesta','Integrazione inviata','Parere / nulla osta','Sopralluogo','Comunicazione','Altro'];
+  if(!rows.length)return'<div class="practice-info-empty-v14">Nessuna informazione strutturata. Premi “+ Informazione”.</div>';
+  return rows.map(r=>{
+    const expiry=r.expiryDate;
+    return `<div class="practice-info-row-v14" data-info-row="${r.id}">
+      <div class="practice-info-main-v14">
+        <select data-info-f="kind">${kinds.map(k=>`<option value="${esc(k)}" ${r.kind===k?'selected':''}>${esc(k)}</option>`).join('')}</select>
+        <input type="text" data-info-f="object" value="${esc(r.object)}" placeholder="Oggetto / descrizione">
+        <button class="del-btn" type="button" data-info-delete="${r.id}">✕</button>
+      </div>
+      <div class="practice-info-detail-v14">
+        ${r.kind==='Pratica presentata'?`<label><span>Tipo pratica</span><input type="text" data-info-f="practiceType" value="${esc(r.practiceType)}" placeholder="Es. CILA, SCIA, Paesaggistica..."></label>`:''}
+        <label><span>Data</span><input type="date" data-info-f="date" value="${esc(r.date)}"></label>
+        <label><span>Protocollo</span><input type="text" data-info-f="protocol" value="${esc(r.protocol)}" placeholder="Numero protocollo"></label>
+        <label><span>Termine</span><select data-info-f="termType">
+          <option value="" ${!r.termType?'selected':''}>Nessuno</option>
+          <option value="1" ${r.termType==='1'?'selected':''}>1 anno</option>
+          <option value="2" ${r.termType==='2'?'selected':''}>2 anni</option>
+          <option value="3" ${r.termType==='3'?'selected':''}>3 anni</option>
+          <option value="custom" ${r.termType==='custom'?'selected':''}>Data manuale</option>
+        </select></label>
+        ${r.termType?`<label><span>Scadenza</span><input type="date" data-info-f="expiryDate" value="${esc(expiry)}" ${r.termType!=='custom'?'readonly':''}></label>`:''}
+        ${expiry?`<div class="practice-info-remaining-v14"><span>Tempo residuo</span><strong>${esc(remainingText(expiry))}</strong></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function syncInfoExpiry(r){
+  if(['1','2','3'].includes(r.termType)&&r.date)r.expiryDate=addYears(r.date,r.termType);
+  else if(!r.termType)r.expiryDate='';
+}
+function renderTermsSummary(p){
+  const terms=practiceTerms(p);
+  return `<div class="terms-summary-v14">
+    ${terms.length?terms.map(t=>`<div class="term-summary-row-v14">
+      <div><strong>${esc(t.reason||'Termine pratica')}</strong><span>${formatDate(t.date)}</span></div>
+      <span class="term-remaining-v14">${esc(remainingText(t.date))}</span>
+    </div>`).join(''):'<div class="manager-deadlines-empty">Nessun termine inserito.</div>'}
+  </div>`;
+}
+
 function renderPracticeHero(p){return`<div class="practice-hero-v9">
   <div class="practice-hero-main">
     <label class="hero-client-label"><span class="field-label">Società / Cliente</span><input id="manager-client" class="hero-client-input" type="text" value="${esc(p.cliente)}" placeholder="Società o cliente"></label>
@@ -374,6 +464,7 @@ function renderPracticeHero(p){return`<div class="practice-hero-v9">
       <label><span class="field-label">Comune</span><input id="manager-comune" type="text" value="${esc(p.comune)}" placeholder="Comune"></label>
       <label><span class="field-label">Via</span><input id="manager-via" type="text" value="${esc(p.via)}" placeholder="Via / indirizzo"></label>
     </div>
+    <label class="hero-phase-v14"><span class="field-label">Fase del lavoro</span><input id="manager-phase" type="text" value="${esc(p.faseLavoro||'')}" placeholder="Es. Attesa nulla osta MM / integrazione geologo / da protocollare"></label>
   </div>
   <div class="practice-hero-side">
     <label><span class="field-label">Informazioni catastali</span><textarea id="manager-catasto" class="catasto-note-v9" placeholder="Es. Foglio 12, particella 345, sub 7...">${esc(p.infoCatastali||'')}</textarea></label>
@@ -396,6 +487,19 @@ function renderManager(){
       ${renderPracticeHero(p)}
     </section>
 
+    <section class="manager-card-v12 structured-info-card-v14">
+      <div class="manager-card-head-v12">
+        <div>
+          <div class="manager-card-kicker-v12">Dati pratica</div>
+          <div class="manager-card-title-v12">Informazioni pratica</div>
+        </div>
+        <button class="btn" id="manager-add-info" type="button">+ Informazione</button>
+      </div>
+      <div class="manager-card-body-v12">
+        <div id="practice-info-rows-v14">${renderPracticeInfoRows(p)}</div>
+      </div>
+    </section>
+
     <div class="manager-split-v12">
       <section class="manager-card-v12 notes-card-v12">
         <div class="manager-card-head-v12">
@@ -406,17 +510,6 @@ function renderManager(){
         </div>
         <div class="manager-card-body-v12 notes-body-v12">
           <textarea class="manager-notes manager-notes-v12" id="manager-notes" placeholder="Scrivi qui note, richieste, contatti, promemoria...">${esc(p.note)}</textarea>
-
-          <div class="notes-deadlines-section-v13">
-            <div class="notes-deadlines-head-v13">
-              <div>
-                <div class="manager-card-kicker-v12">Da ricordare</div>
-                <div class="notes-deadlines-title-v13">Scadenze</div>
-              </div>
-              <button class="btn" id="manager-add-deadline" type="button">+ Scadenza</button>
-            </div>
-            ${renderManagerDeadlinesEditor(p)}
-          </div>
         </div>
       </section>
 
@@ -448,6 +541,22 @@ function renderManager(){
       <div class="manager-card-body-v12 history-body-v12">
         <div class="timeline timeline-v10">${renderHistory(p)}</div>
       </div>
+    </section>
+
+    <section class="manager-card-v12 terms-card-v14">
+      <div class="manager-card-head-v12 terms-card-head-v14">
+        <div>
+          <div class="manager-card-kicker-v12">Promemoria tecnico</div>
+          <div class="manager-card-title-v12">Termini pratica</div>
+        </div>
+        <button class="btn subtle-v14" id="manager-add-deadline" type="button">+ Termine manuale</button>
+      </div>
+      <div class="manager-card-body-v12">
+        ${renderTermsSummary(p)}
+        <div class="manual-terms-editor-v14">
+          ${renderManagerDeadlinesEditor(p)}
+        </div>
+      </div>
     </section>`;
 
   bindManager(p,c);
@@ -462,11 +571,34 @@ function bindManager(p,c){
   bindText('manager-comune','comune',()=>{renderDashboard()});
   bindText('manager-via','via',()=>{renderDashboard()});
   bindText('manager-catasto','infoCatastali');
+  bindText('manager-phase','faseLavoro',()=>{renderDashboard()});
 
   const pri=$('manager-priority');if(pri){colorizePriority(pri);pri.addEventListener('change',()=>{p.priorita=pri.value;colorizePriority(pri);save('pratiche-data',pratiche,statusP||null);renderDashboard()})}
   const pay=$('manager-payment');if(pay){pay.addEventListener('change',()=>{p.statoPagamento=pay.value;pay.className='pay-select '+payClass(p.statoPagamento);save('pratiche-data',pratiche,statusP||null);renderDashboard()})}
 
   const notes=$('manager-notes');if(notes){notes.addEventListener('input',()=>p.note=notes.value);notes.addEventListener('change',()=>save('pratiche-data',pratiche,statusP||null))}
+
+  const addInfo=$('manager-add-info');if(addInfo)addInfo.addEventListener('click',()=>{
+    p.infoRows.push({id:uid(),kind:'Pratica presentata',object:'',practiceType:'',date:'',protocol:'',termType:'',expiryDate:''});
+    save('pratiche-data',pratiche,statusP||null);renderManager();renderScadenze();
+  });
+  document.querySelectorAll('[data-info-row]').forEach(row=>{
+    row.querySelectorAll('[data-info-f]').forEach(el=>{
+      const eventName=(el.dataset.infoF==='object'||el.dataset.infoF==='practiceType'||el.dataset.infoF==='protocol')?'change':'change';
+      el.addEventListener(eventName,()=>{
+        const r=p.infoRows.find(x=>x.id===row.dataset.infoRow);if(!r)return;
+        const f=el.dataset.infoF;r[f]=el.value;
+        if(f==='date'||f==='termType')syncInfoExpiry(r);
+        if(f==='expiryDate'&&r.termType!=='custom')syncInfoExpiry(r);
+        save('pratiche-data',pratiche,statusP||null);
+        renderManager();renderScadenze();
+      });
+    });
+  });
+  document.querySelectorAll('[data-info-delete]').forEach(btn=>btn.addEventListener('click',()=>{
+    p.infoRows=p.infoRows.filter(r=>r.id!==btn.dataset.infoDelete);
+    save('pratiche-data',pratiche,statusP||null);renderManager();renderScadenze();
+  }));
 
   const csel=$('manager-checklist-select');if(csel)csel.addEventListener('change',()=>{managerChecklistId=csel.value;renderManager()});
   const cname=$('current-checklist-name');if(cname&&c){
@@ -502,17 +634,9 @@ function bindManager(p,c){
     row.querySelectorAll('[data-md-f]').forEach(inp=>inp.addEventListener('change',()=>{
       const d=p.deadlines.find(x=>x.id===row.dataset.managerDeadline);if(!d)return;
       d[inp.dataset.mdF]=inp.value;syncLegacyScadenza(p);
-      save('pratiche-data',pratiche,statusP||null);renderDashboard();renderScadenze();
+      save('pratiche-data',pratiche,statusP||null);renderScadenze();
     }));
   });
-  document.querySelectorAll('[data-md-done]').forEach(ch=>ch.addEventListener('change',()=>{
-    if(!ch.checked)return;
-    const d=p.deadlines.find(x=>x.id===ch.dataset.mdDone);if(!d)return;
-    d.done=true;d.completedAt=todayISO();
-    syncLegacyScadenza(p);
-    save('pratiche-data',pratiche,statusP||null);
-    renderManager();renderDashboard();renderScadenze();
-  }));
 
   document.querySelectorAll('[data-md-delete]').forEach(btn=>btn.addEventListener('click',()=>{
     p.deadlines=p.deadlines.filter(d=>d.id!==btn.dataset.mdDelete);syncLegacyScadenza(p);

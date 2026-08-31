@@ -37,16 +37,15 @@
 </nav>
 
 <section class="view active" data-view="dashboard">
-<div class="dashboard-grid-v7">
+<div class="dashboard-grid-v14">
 <div class="panel dashboard-main-panel">
-      <div class="panel-head">
-        <div class="panel-head-left"><h2><span class="accent-dot"></span>Pratiche attive</h2><span class="small-note" id="dashboard-practice-count">—</span></div>
-        <button class="btn gold" id="dashboard-add-practice" type="button">+ Aggiungi pratica</button>
-      </div>
-      <div id="dashboard-new-practice" class="dashboard-new-practice" hidden></div>
-      <div id="dashboard-practices" class="dashboard-practices"></div>
-    </div>
-<div class="panel dashboard-deadlines-panel"><div class="panel-head"><h2><span class="accent-dot"></span>Prossime scadenze</h2><span class="small-note" id="dashboard-count">—</span></div><div id="dashboard-deadlines" class="dashboard-list"></div></div>
+  <div class="panel-head">
+    <div class="panel-head-left"><h2><span class="accent-dot"></span>Pratiche attive</h2><span class="small-note" id="dashboard-practice-count">—</span></div>
+    <button class="btn gold" id="dashboard-add-practice" type="button">+ Aggiungi pratica</button>
+  </div>
+  <div id="dashboard-new-practice" class="dashboard-new-practice" hidden></div>
+  <div id="dashboard-practices" class="dashboard-practices"></div>
+</div>
 </div>
 </section>
 
@@ -83,7 +82,7 @@
 <div class="panel"><div class="panel-head"><h2>Checklist disponibili</h2><span class="small-note" id="template-count">—</span></div><div id="template-list" class="template-list"></div></div>
 </div></section>
 
-<section class="view" data-view="scadenze"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Scadenze pratiche</h2><span class="small-note">Tutte le scadenze con relativo motivo</span></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:13%">Data</th><th style="width:22%">Motivo</th><th style="width:19%">Cliente</th><th style="width:20%">Pratica</th><th style="width:17%">Comune / Via</th><th style="width:9%">Stato</th></tr></thead><tbody id="tbody-scadenze"></tbody></table></div></div></section>
+<section class="view" data-view="scadenze"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Termini pratiche</h2><span class="small-note">Termini utili per chiusura e validità delle pratiche</span></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:13%">Data</th><th style="width:22%">Motivo</th><th style="width:19%">Cliente</th><th style="width:20%">Pratica</th><th style="width:17%">Comune / Via</th><th style="width:9%">Stato</th></tr></thead><tbody id="tbody-scadenze"></tbody></table></div></div></section>
 
 <section class="view" data-view="clienti"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Clienti</h2><span class="small-note" id="clienti-count">—</span></div><div class="filter-bar"><label class="search-box"><span class="field-label">Cerca cliente</span><input id="client-search" type="text" placeholder="Nome cliente..."></label><label class="filter-box"><span class="field-label">Filtro</span><select id="client-filter"><option value="all">Tutti</option><option value="active">Con pratiche attive</option><option value="archived">Solo archivio</option></select></label></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:30%">Cliente</th><th style="width:14%">Pratiche attive</th><th style="width:14%">Archiviate</th><th style="width:32%">Ultimo indirizzo</th><th style="width:10%"></th></tr></thead><tbody id="tbody-clienti"></tbody></table></div></div></section>
 

@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V13
+GESTIONALE REGISTRO LAVORO V14
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,34 +8,31 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-NOVITÀ V13
+NOVITÀ V14
 
-DASHBOARD / NUOVA PRATICA
-- Aggiunto “Copia pratica”.
-- Scrivi parte del nome, oggetto, comune o via (es. “base”).
-- Selezioni la pratica trovata.
-- Copia: cliente, comune, via, priorità, pagamento e informazioni catastali.
-- NON copia l’oggetto della pratica.
-- NON copia note, scadenze, checklist o storia.
+DASHBOARD
+- Tolte completamente le prossime scadenze dalla Dashboard.
+- Le Pratiche attive occupano tutta la larghezza.
+- Aggiunta “Fase del lavoro”.
+- La fase è testo libero e viene mostrata direttamente nella pratica attiva.
 
-SCADENZE IN GESTIONE PRATICA
-- Le scadenze non sono più un riquadro separato.
-- Sono sotto Note pratica.
-- Ogni scadenza ha: flag, data di scadenza, motivo.
-- Quando flagghi una scadenza:
-  - sparisce dalle scadenze attive;
-  - sparisce dalla Dashboard / pagina Scadenze;
-  - entra in Storia pratica;
-  - la data in Storia è la data in cui hai messo il flag.
+GESTIONE PRATICA
+- Aggiunto campo “Fase del lavoro” nella scheda principale.
+- Aggiunta una nuova scheda “Informazioni pratica” tra i dati società/cliente e gli appunti.
+- Puoi aggiungere più informazioni.
+- Ogni informazione ha:
+  tipo (Pratica presentata, Integrazione richiesta, Integrazione inviata, Parere/nulla osta, Sopralluogo, Comunicazione, Altro),
+  oggetto/descrizione,
+  data,
+  protocollo.
+- Se selezioni “Pratica presentata” puoi scrivere anche il tipo di pratica (es. CILA).
+- Puoi indicare un termine: 1 anno, 2 anni, 3 anni o data manuale.
+- Il sistema calcola la data di scadenza e mostra “tra quanto scade”.
 
-CHECKLIST
-- Tolto “crea checklist vuota”.
-- Nel menu preimpostate c’è “Checklist pulita · 5 voci”.
-- Aggiungendola ottieni 5 righe vuote da compilare.
-- Restano disponibili tutti i modelli creati in “Crea checklist”.
-- In Gestione pratica puoi aggiungere ed eliminare singole voci.
-- “Crea checklist” ora ha:
-  - selezione della pratica destinataria;
-  - pulsante “Invia alla pratica”.
-- Il pulsante salva il modello e ne invia una copia alla pratica selezionata.
-- Nella pratica lavori sulla copia senza modificare il modello generale.
+TERMINI PRATICA
+- Spostati in fondo a Gestione pratica.
+- Hanno volutamente meno importanza grafica.
+- Non compaiono più in Dashboard.
+- I termini generati dalle Informazioni pratica vengono riepilogati automaticamente.
+- Puoi mantenere anche termini manuali aggiuntivi.
+- La pagina generale “Scadenze” è stata rinominata “Termini pratiche”.
