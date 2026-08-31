@@ -16,7 +16,7 @@ function normalizeItem(i){return{id:i?.id||uid(),text:i?.text||'',done:!!i?.done
 function normalizeChecklistGroup(c){return{id:c?.id||uid(),name:c?.name||'Checklist',templateId:c?.templateId||'',items:Array.isArray(c?.items)?c.items.map(normalizeItem):[],sent:!!c?.sent,sentAt:c?.sentAt||'',workDate:c?.workDate||c?.sentAt||todayISO(),protocol:c?.protocol||'',protocolDate:c?.protocolDate||'',sendNote:c?.sendNote||''}}
 function normalizeHistory(h){return{id:h?.id||uid(),type:h?.type||'note',checklistId:h?.checklistId||'',title:h?.title||'',date:h?.date||'',protocol:h?.protocol||'',protocolDate:h?.protocolDate||'',note:h?.note||''}}
 function normalizeDeadline(d){return{id:d?.id||uid(),date:d?.date||'',reason:d?.reason||'',done:!!d?.done,completedAt:d?.completedAt||''}}
-function normalizeInfoRow(r){return{id:r?.id||uid(),kind:r?.kind||'Pratica presentata',object:r?.object||'',practiceType:r?.practiceType||'',date:r?.date||'',protocol:r?.protocol||'',termType:r?.termType||'',expiryDate:r?.expiryDate||''}}
+function normalizeInfoRow(r){return{id:r?.id||uid(),kind:r?.kind||'Pratica presentata',object:r?.object||'',practiceType:r?.practiceType||'',date:r?.date||'',protocol:r?.protocol||'',termType:r?.termType||'',expiryDate:r?.expiryDate||'',sentToStatus:!!r?.sentToStatus,sentAt:r?.sentAt||''}}
 function migrateLegacyChecklist(p){if(Array.isArray(p.checklists))return p.checklists.map(normalizeChecklistGroup);if(Array.isArray(p.checklist)&&p.checklist.length){return[normalizeChecklistGroup({name:'Checklist pratica',items:p.checklist.map(i=>({id:i.id,text:i.text,done:i.done}))})]}return[]}
 function migrateDeadlines(p){if(Array.isArray(p.deadlines)&&p.deadlines.length)return p.deadlines.map(normalizeDeadline);if(p.scadenza)return[normalizeDeadline({date:p.scadenza,reason:'Scadenza principale'})];return[]}
 function practiceTerms(p){
@@ -27,7 +27,7 @@ function practiceTerms(p){
 }
 function nearestDeadline(p){return practiceTerms(p)[0]||null}
 function syncLegacyScadenza(p){const n=nearestDeadline(p);p.scadenza=n?.date||''}
-function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';const out={id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',deadlines:migrateDeadlines(p),anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',infoCatastali:p.infoCatastali||'',faseLavoro:p.faseLavoro||'',infoRows:Array.isArray(p.infoRows)?p.infoRows.map(normalizeInfoRow):[],fatta:!!p.fatta,checklists:migrateLegacyChecklist(p),history:Array.isArray(p.history)?p.history.map(normalizeHistory):[]};syncLegacyScadenza(out);return out}
+function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';const out={id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',deadlines:migrateDeadlines(p),anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',infoCatastali:p.infoCatastali||'',foglio:p.foglio||'',mappale:p.mappale||'',subalterno:p.subalterno||'',faseLavoro:p.faseLavoro||'',quickProtocolObject:p.quickProtocolObject||'',quickProtocolNumber:p.quickProtocolNumber||'',quickProtocolDate:p.quickProtocolDate||'',infoRows:Array.isArray(p.infoRows)?p.infoRows.map(normalizeInfoRow):[],fatta:!!p.fatta,checklists:migrateLegacyChecklist(p),history:Array.isArray(p.history)?p.history.map(normalizeHistory):[]};syncLegacyScadenza(out);return out}
 function normalizeTemplate(t){return{id:t?.id||uid(),name:t?.name||'Checklist',items:Array.isArray(t?.items)?t.items.map(i=>({id:i?.id||uid(),text:i?.text||''})):[]}}
 function normalizeCandidatura(c){return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata}}
 function colorizePriority(sel){const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};sel.style.color=map[sel.value]||''}
@@ -221,7 +221,11 @@ function openDashboardPracticeCreator(){
       statoPagamento:$('newp-pagamento').value,
       note:'',
       infoCatastali:copySource?.infoCatastali||'',
+      foglio:copySource?.foglio||'',
+      mappale:copySource?.mappale||'',
+      subalterno:copySource?.subalterno||'',
       faseLavoro:'',
+      quickProtocolObject:'',quickProtocolNumber:'',quickProtocolDate:'',
       infoRows:[],
       fatta:false,
       checklists:[],
@@ -319,14 +323,10 @@ function renderHistory(p){
   const events=p.history.slice();
   if(p.presentata)events.push({id:'presentata',type:'presentata',title:'Pratica presentata',date:p.presentata,protocol:'',protocolDate:'',note:''});
   (p.deadlines||[]).filter(d=>d.done&&d.completedAt).forEach(d=>events.push({
-    id:'deadline-'+d.id,
-    type:'deadline-complete',
-    deadlineId:d.id,
-    title:d.reason||'Scadenza completata',
-    date:d.completedAt,
-    protocol:'',
-    protocolDate:'',
-    note:d.date?`Scadenza prevista: ${formatDate(d.date)}`:''
+    id:'deadline-'+d.id,type:'deadline-complete',deadlineId:d.id,title:d.reason||'Scadenza completata',date:d.completedAt,protocol:'',protocolDate:'',note:d.date?`Scadenza prevista: ${formatDate(d.date)}`:''
+  }));
+  (p.infoRows||[]).filter(r=>r.sentToStatus&&r.sentAt).forEach(r=>events.push({
+    id:'info-'+r.id,type:'info-status',title:r.object||r.kind||'Aggiornamento pratica',date:r.sentAt,protocol:r.protocol||'',protocolDate:r.date||'',note:[r.kind,r.practiceType].filter(Boolean).join(' · ')
   }));
   events.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   if(!events.length)return'<div class="timeline-empty">Nessun evento registrato.</div>';
@@ -415,18 +415,18 @@ function renderChecklistFooter(p){
 
 function renderPracticeInfoRows(p){
   const rows=p.infoRows||[];
-  const kinds=['Pratica presentata','Integrazione richiesta','Integrazione inviata','Parere / nulla osta','Sopralluogo','Comunicazione','Altro'];
-  if(!rows.length)return'<div class="practice-info-empty-v14">Nessuna informazione strutturata. Premi “+ Informazione”.</div>';
+  const kinds=['Pratica presentata','Integrazione richiesta','Integrazione inviata','Parere / nulla osta','Protocollo','Sopralluogo','Comunicazione','Altro'];
+  if(!rows.length)return'<div class="practice-info-empty-v14">Nessuna informazione inserita. Premi “+ Informazione”.</div>';
   return rows.map(r=>{
     const expiry=r.expiryDate;
-    return `<div class="practice-info-row-v14" data-info-row="${r.id}">
+    return `<div class="practice-info-row-v14 ${r.sentToStatus?'sent-status-v15':''}" data-info-row="${r.id}">
       <div class="practice-info-main-v14">
         <select data-info-f="kind">${kinds.map(k=>`<option value="${esc(k)}" ${r.kind===k?'selected':''}>${esc(k)}</option>`).join('')}</select>
         <input type="text" data-info-f="object" value="${esc(r.object)}" placeholder="Oggetto / descrizione">
         <button class="del-btn" type="button" data-info-delete="${r.id}">✕</button>
       </div>
       <div class="practice-info-detail-v14">
-        ${r.kind==='Pratica presentata'?`<label><span>Tipo pratica</span><input type="text" data-info-f="practiceType" value="${esc(r.practiceType)}" placeholder="Es. CILA, SCIA, Paesaggistica..."></label>`:''}
+        ${r.kind==='Pratica presentata'?`<label><span>Tipo pratica</span><input type="text" data-info-f="practiceType" value="${esc(r.practiceType)}" placeholder="Es. CILA, SCIA..."></label>`:''}
         <label><span>Data</span><input type="date" data-info-f="date" value="${esc(r.date)}"></label>
         <label><span>Protocollo</span><input type="text" data-info-f="protocol" value="${esc(r.protocol)}" placeholder="Numero protocollo"></label>
         <label><span>Termine</span><select data-info-f="termType">
@@ -438,6 +438,11 @@ function renderPracticeInfoRows(p){
         </select></label>
         ${r.termType?`<label><span>Scadenza</span><input type="date" data-info-f="expiryDate" value="${esc(expiry)}" ${r.termType!=='custom'?'readonly':''}></label>`:''}
         ${expiry?`<div class="practice-info-remaining-v14"><span>Tempo residuo</span><strong>${esc(remainingText(expiry))}</strong></div>`:''}
+      </div>
+      <div class="info-status-action-v15">
+        ${r.sentToStatus
+          ? `<span class="status-sent-v15">Inviata a stato pratica${r.sentAt?' · '+formatDate(r.sentAt):''}</span>`
+          : `<button class="btn" type="button" data-info-send="${r.id}">Invia a stato pratica</button>`}
       </div>
     </div>`;
   }).join('');
@@ -456,24 +461,40 @@ function renderTermsSummary(p){
   </div>`;
 }
 
-function renderPracticeHero(p){return`<div class="practice-hero-v9">
-  <div class="practice-hero-main">
-    <label class="hero-client-label"><span class="field-label">Società / Cliente</span><input id="manager-client" class="hero-client-input" type="text" value="${esc(p.cliente)}" placeholder="Società o cliente"></label>
-    <label class="hero-object-label"><span class="field-label">Oggetto pratica</span><input id="manager-object" class="hero-object-input" type="text" value="${esc(p.pratica)}" placeholder="Oggetto della pratica"></label>
-    <div class="hero-location-grid">
-      <label><span class="field-label">Comune</span><input id="manager-comune" type="text" value="${esc(p.comune)}" placeholder="Comune"></label>
-      <label><span class="field-label">Via</span><input id="manager-via" type="text" value="${esc(p.via)}" placeholder="Via / indirizzo"></label>
+function renderPracticeHero(p){
+  return `<div class="compact-practice-v15">
+    <div class="compact-practice-grid-v15">
+      <label><span>Cliente / Società</span><input id="manager-client" type="text" value="${esc(p.cliente)}" placeholder="Cliente / società"></label>
+      <label class="compact-object-v15"><span>Oggetto</span><input id="manager-object" type="text" value="${esc(p.pratica)}" placeholder="Oggetto pratica"></label>
+      <label><span>Comune</span><input id="manager-comune" type="text" value="${esc(p.comune)}" placeholder="Comune"></label>
+      <label><span>Via</span><input id="manager-via" type="text" value="${esc(p.via)}" placeholder="Via / indirizzo"></label>
+      <label><span>Priorità</span><select id="manager-priority" class="priority-select"><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option></select></label>
+      <label><span>Pagamento</span><select id="manager-payment" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></label>
     </div>
-    <label class="hero-phase-v14"><span class="field-label">Fase del lavoro</span><input id="manager-phase" type="text" value="${esc(p.faseLavoro||'')}" placeholder="Es. Attesa nulla osta MM / integrazione geologo / da protocollare"></label>
-  </div>
-  <div class="practice-hero-side">
-    <label><span class="field-label">Informazioni catastali</span><textarea id="manager-catasto" class="catasto-note-v9" placeholder="Es. Foglio 12, particella 345, sub 7...">${esc(p.infoCatastali||'')}</textarea></label>
-    <div class="hero-status-grid">
-      <label><span class="field-label">Priorità</span><select id="manager-priority" class="priority-select"><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option></select></label>
-      <label><span class="field-label">Pagamento</span><select id="manager-payment" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></label>
+
+    <div class="compact-practice-lower-v15">
+      <label class="compact-note-v15"><span>Note pratica</span><textarea id="manager-notes" placeholder="Note della pratica...">${esc(p.note)}</textarea></label>
+
+      <div class="compact-catasto-v15">
+        <div class="compact-section-label-v15">Info catastali</div>
+        <div class="catasto-grid-v15">
+          <label><span>Foglio</span><input id="manager-foglio" type="text" value="${esc(p.foglio||'')}" placeholder="Foglio"></label>
+          <label><span>Mappale</span><input id="manager-mappale" type="text" value="${esc(p.mappale||'')}" placeholder="Mappale"></label>
+          <label><span>Sub.</span><input id="manager-subalterno" type="text" value="${esc(p.subalterno||'')}" placeholder="Sub."></label>
+        </div>
+      </div>
     </div>
-  </div>
-</div>`}
+
+    <div class="phase-protocol-v15">
+      <label class="phase-field-v15"><span>Fase lavoro</span><input id="manager-phase" type="text" value="${esc(p.faseLavoro||'')}" placeholder="Es. attesa nulla osta / integrazione / da protocollare"></label>
+      <label><span>Oggetto protocollo</span><input id="quick-protocol-object" type="text" value="${esc(p.quickProtocolObject||'')}" placeholder="Oggetto"></label>
+      <label><span>Prot. n.</span><input id="quick-protocol-number" type="text" value="${esc(p.quickProtocolNumber||'')}" placeholder="Numero"></label>
+      <label><span>Data</span><input id="quick-protocol-date" type="date" value="${esc(p.quickProtocolDate||'')}"></label>
+      <button class="btn gold quick-protocol-add-v15" id="quick-protocol-add" type="button">Aggiungi</button>
+    </div>
+  </div>`;
+}
+
 
 function renderManager(){
   renderManagerPracticeSelect();
@@ -500,36 +521,22 @@ function renderManager(){
       </div>
     </section>
 
-    <div class="manager-split-v12">
-      <section class="manager-card-v12 notes-card-v12">
-        <div class="manager-card-head-v12">
-          <div>
-            <div class="manager-card-kicker-v12">Appunti</div>
-            <div class="manager-card-title-v12">Note pratica</div>
-          </div>
-        </div>
-        <div class="manager-card-body-v12 notes-body-v12">
-          <textarea class="manager-notes manager-notes-v12" id="manager-notes" placeholder="Scrivi qui note, richieste, contatti, promemoria...">${esc(p.note)}</textarea>
-        </div>
-      </section>
-
-      <section class="manager-card-v12 checklist-card-v12">
-        <div class="manager-card-head-v12 checklist-card-head-v12">
-          ${renderChecklistHeaderSelect(p)}
-        </div>
-        <div class="manager-card-body-v12 checklist-body-v12">
-          ${c?renderChecklistPanel(c):`
-            <div class="simple-no-checklist-v11">
-              <div class="simple-no-checklist-icon-v11">✓</div>
-              <div class="simple-no-checklist-title-v11">Nessuna checklist selezionata</div>
-              <div class="simple-no-checklist-text-v11">Scegli una checklist dal menu oppure aggiungine una preimpostata qui sotto.</div>
-            </div>`}
-        </div>
-        <div class="manager-card-footer-v12">
-          ${renderChecklistFooter(p)}
-        </div>
-      </section>
-    </div>
+    <section class="manager-card-v12 checklist-card-v12 checklist-full-v15">
+      <div class="manager-card-head-v12 checklist-card-head-v12">
+        ${renderChecklistHeaderSelect(p)}
+      </div>
+      <div class="manager-card-body-v12 checklist-body-v12">
+        ${c?renderChecklistPanel(c):`
+          <div class="simple-no-checklist-v11">
+            <div class="simple-no-checklist-icon-v11">✓</div>
+            <div class="simple-no-checklist-title-v11">Nessuna checklist selezionata</div>
+            <div class="simple-no-checklist-text-v11">Scegli una checklist dal menu oppure aggiungine una preimpostata qui sotto.</div>
+          </div>`}
+      </div>
+      <div class="manager-card-footer-v12">
+        ${renderChecklistFooter(p)}
+      </div>
+    </section>
 
     <section class="manager-card-v12 history-card-v12">
       <div class="manager-card-head-v12">
@@ -549,11 +556,12 @@ function renderManager(){
           <div class="manager-card-kicker-v12">Promemoria tecnico</div>
           <div class="manager-card-title-v12">Termini pratica</div>
         </div>
-        <button class="btn subtle-v14" id="manager-add-deadline" type="button">+ Termine manuale</button>
+        <button class="btn subtle-v14" id="toggle-terms-edit" type="button">Modifica</button>
       </div>
       <div class="manager-card-body-v12">
         ${renderTermsSummary(p)}
-        <div class="manual-terms-editor-v14">
+        <div class="manual-terms-editor-v14 terms-editor-hidden-v15" id="terms-editor-v15">
+          <div class="terms-edit-head-v15"><button class="btn" id="manager-add-deadline" type="button">+ Termine manuale</button></div>
           ${renderManagerDeadlinesEditor(p)}
         </div>
       </div>
@@ -561,7 +569,6 @@ function renderManager(){
 
   bindManager(p,c);
 }
-
 function completeWorkingChecklist(p,c){const allDone=c.items.length===0||c.items.every(i=>i.done);if(!allDone&&!confirm(`La checklist “${c.name}” ha ancora voci non completate. Vuoi comunque spostarla nella storia pratica?`))return;c.sent=true;c.sentAt=c.workDate||todayISO();syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP||null);renderManager()}
 
 function bindManager(p,c){
@@ -570,7 +577,9 @@ function bindManager(p,c){
   bindText('manager-object','pratica',()=>{renderDashboard()});
   bindText('manager-comune','comune',()=>{renderDashboard()});
   bindText('manager-via','via',()=>{renderDashboard()});
-  bindText('manager-catasto','infoCatastali');
+  bindText('manager-foglio','foglio');
+  bindText('manager-mappale','mappale');
+  bindText('manager-subalterno','subalterno');
   bindText('manager-phase','faseLavoro',()=>{renderDashboard()});
 
   const pri=$('manager-priority');if(pri){colorizePriority(pri);pri.addEventListener('change',()=>{p.priorita=pri.value;colorizePriority(pri);save('pratiche-data',pratiche,statusP||null);renderDashboard()})}
@@ -578,8 +587,32 @@ function bindManager(p,c){
 
   const notes=$('manager-notes');if(notes){notes.addEventListener('input',()=>p.note=notes.value);notes.addEventListener('change',()=>save('pratiche-data',pratiche,statusP||null))}
 
+  const qpObj=$('quick-protocol-object'),qpNum=$('quick-protocol-number'),qpDate=$('quick-protocol-date');
+  if(qpObj)qpObj.addEventListener('input',()=>p.quickProtocolObject=qpObj.value);
+  if(qpNum)qpNum.addEventListener('input',()=>p.quickProtocolNumber=qpNum.value);
+  if(qpDate)qpDate.addEventListener('change',()=>p.quickProtocolDate=qpDate.value);
+  const qpAdd=$('quick-protocol-add');if(qpAdd)qpAdd.addEventListener('click',()=>{
+    const object=(qpObj?.value||'').trim(),protocol=(qpNum?.value||'').trim(),date=qpDate?.value||'';
+    if(!object&&!protocol&&!date){alert('Inserisci almeno oggetto, protocollo o data.');return}
+    p.infoRows.push({id:uid(),kind:'Protocollo',object,practiceType:'',date,protocol,termType:'',expiryDate:'',sentToStatus:false,sentAt:''});
+    p.quickProtocolObject='';p.quickProtocolNumber='';p.quickProtocolDate='';
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  });
+
+  document.querySelectorAll('[data-info-send]').forEach(btn=>btn.addEventListener('click',()=>{
+    const r=p.infoRows.find(x=>x.id===btn.dataset.infoSend);if(!r)return;
+    r.sentToStatus=true;r.sentAt=todayISO();
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  }));
+
+  const toggleTerms=$('toggle-terms-edit');if(toggleTerms)toggleTerms.addEventListener('click',()=>{
+    const ed=$('terms-editor-v15');if(!ed)return;
+    ed.classList.toggle('terms-editor-hidden-v15');
+    toggleTerms.textContent=ed.classList.contains('terms-editor-hidden-v15')?'Modifica':'Chiudi';
+  });
+
   const addInfo=$('manager-add-info');if(addInfo)addInfo.addEventListener('click',()=>{
-    p.infoRows.push({id:uid(),kind:'Pratica presentata',object:'',practiceType:'',date:'',protocol:'',termType:'',expiryDate:''});
+    p.infoRows.push({id:uid(),kind:'Pratica presentata',object:'',practiceType:'',date:'',protocol:'',termType:'',expiryDate:'',sentToStatus:false,sentAt:''});
     save('pratiche-data',pratiche,statusP||null);renderManager();renderScadenze();
   });
   document.querySelectorAll('[data-info-row]').forEach(row=>{

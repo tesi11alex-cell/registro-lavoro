@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V14
+GESTIONALE REGISTRO LAVORO V15
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,31 +8,36 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-NOVITÀ V14
+V15
+- Primo riquadro Gestione pratica molto più compatto.
+- Contiene:
+  Cliente / Società
+  Oggetto
+  Comune
+  Via
+  Priorità
+  Pagamento
+  Note pratica
+  Info catastali: Foglio, Mappale, Sub.
+  Fase lavoro
+- Sulla riga della fase:
+  Oggetto protocollo
+  Prot. n.
+  Data
+  Aggiungi
+- “Aggiungi” crea una nuova Informazione pratica di tipo Protocollo.
 
-DASHBOARD
-- Tolte completamente le prossime scadenze dalla Dashboard.
-- Le Pratiche attive occupano tutta la larghezza.
-- Aggiunta “Fase del lavoro”.
-- La fase è testo libero e viene mostrata direttamente nella pratica attiva.
-
-GESTIONE PRATICA
-- Aggiunto campo “Fase del lavoro” nella scheda principale.
-- Aggiunta una nuova scheda “Informazioni pratica” tra i dati società/cliente e gli appunti.
-- Puoi aggiungere più informazioni.
-- Ogni informazione ha:
-  tipo (Pratica presentata, Integrazione richiesta, Integrazione inviata, Parere/nulla osta, Sopralluogo, Comunicazione, Altro),
-  oggetto/descrizione,
-  data,
-  protocollo.
-- Se selezioni “Pratica presentata” puoi scrivere anche il tipo di pratica (es. CILA).
-- Puoi indicare un termine: 1 anno, 2 anni, 3 anni o data manuale.
-- Il sistema calcola la data di scadenza e mostra “tra quanto scade”.
+INFORMAZIONI PRATICA
+- Ogni informazione ha il pulsante “Invia a stato pratica”.
+- Quando viene inviata resta registrata e compare anche in Storia pratica.
+- Puoi continuare ad aggiungere altre informazioni con + Informazione.
 
 TERMINI PRATICA
-- Spostati in fondo a Gestione pratica.
-- Hanno volutamente meno importanza grafica.
-- Non compaiono più in Dashboard.
-- I termini generati dalle Informazioni pratica vengono riepilogati automaticamente.
-- Puoi mantenere anche termini manuali aggiuntivi.
-- La pagina generale “Scadenze” è stata rinominata “Termini pratiche”.
+- Rimangono in fondo.
+- Di default mostrano solo il riepilogo.
+- Pulsante “Modifica” apre i termini manuali e permette di aggiungerne o modificarne.
+- Pulsante diventa “Chiudi” quando l'editor è aperto.
+
+NOTE PRATICA
+- Tolte dal vecchio riquadro separato.
+- Ora sono dentro il primo riquadro, come richiesto.

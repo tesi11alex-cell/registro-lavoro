@@ -1,4 +1,4 @@
-const CACHE='registro-lavoro-v18';
+const CACHE='registro-lavoro-v19';
 const APP_SHELL=['./','./index.html','./gestionale-v4.css','./auth-v4.js','./gestionale-v4.js','./manifest-v3.webmanifest','./firebase-config.js','./registro-icon-180-v3.png','./registro-icon-192-v3.png','./registro-icon-512-v3.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_SHELL)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});

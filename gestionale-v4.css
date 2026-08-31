@@ -1238,3 +1238,87 @@ body.auth-pending .wrap{display:none}
   .manual-term-row-v14 span{grid-column:1}
   .manual-term-row-v14 .del-btn{grid-column:2;grid-row:1 / span 3}
 }
+
+
+/* V15 — Scheda pratica compatta, protocollo rapido, note sopra */
+.compact-practice-v15{padding:13px 15px}
+.compact-practice-v15 label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.compact-practice-v15 label>span,
+.compact-section-label-v15{
+  font:600 8px 'IBM Plex Mono',monospace;
+  text-transform:uppercase;
+  color:var(--faint);
+}
+.compact-practice-v15 input,
+.compact-practice-v15 select,
+.compact-practice-v15 textarea{
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+}
+.compact-practice-grid-v15{
+  display:grid;
+  grid-template-columns:minmax(150px,1fr) minmax(220px,1.5fr) minmax(120px,.75fr) minmax(170px,1.1fr) 105px 120px;
+  gap:8px;
+}
+.compact-practice-lower-v15{
+  display:grid;
+  grid-template-columns:minmax(0,1.7fr) minmax(320px,.9fr);
+  gap:10px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--line2);
+}
+.compact-note-v15 textarea{min-height:72px!important;max-height:120px!important}
+.compact-catasto-v15{min-width:0}
+.catasto-grid-v15{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:4px;
+}
+.phase-protocol-v15{
+  display:grid;
+  grid-template-columns:minmax(220px,1.45fr) minmax(170px,1fr) 120px 135px auto;
+  gap:8px;
+  align-items:end;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--line2);
+}
+.quick-protocol-add-v15{height:34px}
+
+.info-status-action-v15{
+  display:flex;
+  justify-content:flex-end;
+  padding-top:8px;
+}
+.status-sent-v15{
+  font:600 8.5px 'IBM Plex Mono',monospace;
+  color:var(--green);
+}
+.sent-status-v15{
+  opacity:.82;
+}
+.checklist-full-v15{margin-bottom:14px}
+
+.terms-editor-hidden-v15{display:none}
+.terms-edit-head-v15{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:8px;
+}
+
+@media(max-width:1200px){
+  .compact-practice-grid-v15{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .phase-protocol-v15{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quick-protocol-add-v15{width:max-content}
+}
+@media(max-width:850px){
+  .compact-practice-grid-v15{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .compact-practice-lower-v15{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .compact-practice-grid-v15,
+  .phase-protocol-v15,
+  .catasto-grid-v15{grid-template-columns:1fr}
+}
