@@ -50,15 +50,21 @@
 </div>
 </section>
 
-<section class="view" data-view="gestione"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Gestione pratica</h2><span class="small-note">Checklist, invii, protocolli e storia</span></div>
-<div class="manager-toolbar-v6">
-<label><span class="field-label">Pratica</span><select id="practice-manager-select"><option value="">Seleziona una pratica...</option></select></label>
-<label><span class="field-label">Checklist</span><select id="practice-checklist-select"><option value="">Nessuna checklist</option></select></label>
-<label><span class="field-label">Aggiungi checklist creata</span><select id="template-to-practice"><option value="">Seleziona modello...</option></select></label>
-<div class="manager-toolbar-actions"><button class="btn gold" id="add-template-to-practice" type="button">Aggiungi</button><button class="btn" id="add-empty-checklist" type="button">+ Vuota</button></div>
-</div>
-<div id="manager-body"><div class="manager-empty">Seleziona una pratica attiva per aprirla.</div></div>
-</div></section>
+<section class="view" data-view="gestione">
+  <div class="panel manager-panel-v9">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Gestione pratica</h2>
+      <span class="small-note">Scheda pratica, checklist, note e storia</span>
+    </div>
+    <div class="manager-toolbar manager-toolbar-v9">
+      <label>
+        <span class="field-label">Cambia pratica</span>
+        <select id="practice-manager-select"><option value="">Seleziona una pratica...</option></select>
+      </label>
+    </div>
+    <div id="manager-body"><div class="manager-empty">Seleziona una pratica attiva per aprirla.</div></div>
+  </div>
+</section>
 
 <section class="view" data-view="crea-checklist"><div class="template-layout">
 <div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Crea checklist</h2><button class="btn" id="new-template" type="button">Nuovo modello</button></div><div class="template-editor">

@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V8
+GESTIONALE REGISTRO LAVORO V9
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -6,18 +6,18 @@ SOSTITUISCI SU GITHUB:
 - gestionale-v4.js
 - sw.js
 
-NON serve sostituire auth-v4.js rispetto alla V6/V7.
+NON serve sostituire auth-v4.js rispetto alla V6.
 
-NOVITÀ
-- Rimossa la sezione Pratiche dal menu.
-- Dashboard = punto di ingresso operativo.
-- Pulsante + Aggiungi pratica direttamente in Dashboard.
-- Nuova pratica richiede solo:
-  nome cliente, oggetto/pratica, comune, via, priorità, pagamento.
-- Dopo “Crea e apri” si apre direttamente Gestione pratica.
-- Aggiunto pulsante Apri anche su ogni scadenza della Dashboard.
-- Gestione pratica divisa in 3 colonne uguali:
-  Checklist | Note pratica | Storia pratica.
-- Selettore checklist e aggiunta checklist spostati in basso a sinistra.
-- Priorità e pagamento modificabili direttamente in Gestione pratica.
-- Scadenze modificabili e aggiungibili direttamente in Gestione pratica.
+CORREZIONI / NOVITÀ
+- Corretto Apri dalla Dashboard e dalle scadenze: ora seleziona sempre la pratica e apre Gestione pratica.
+- Gestione pratica mostra una vera scheda:
+  Società/Cliente grande, Oggetto pratica, Comune, Via, Informazioni catastali, Priorità, Pagamento.
+- I dati principali sono modificabili direttamente in Gestione pratica.
+- Crea checklist resta la libreria dei MODELLI generali.
+- Esempio: crei modello “CILA” con i documenti standard.
+- Nella pratica scegli “CILA” -> Aggiungi.
+- Le voci vengono COPIATE nella pratica.
+- Puoi premere “+ Documento” per aggiungere richieste specifiche del Comune solo a quella pratica.
+- Aggiungere/togliere documenti nella pratica NON modifica il modello CILA generale.
+- Aggiunta checklist vuota funzionante.
+- Mantenuti checklist in lavorazione, storia, data modificabile, invio e protocollo.

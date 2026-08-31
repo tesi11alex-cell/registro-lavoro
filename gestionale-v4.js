@@ -20,7 +20,7 @@ function migrateLegacyChecklist(p){if(Array.isArray(p.checklists))return p.check
 function migrateDeadlines(p){if(Array.isArray(p.deadlines)&&p.deadlines.length)return p.deadlines.map(normalizeDeadline);if(p.scadenza)return[normalizeDeadline({date:p.scadenza,reason:'Scadenza principale'})];return[]}
 function nearestDeadline(p){const list=(p.deadlines||[]).filter(d=>d.date).slice().sort((a,b)=>a.date.localeCompare(b.date));return list[0]||null}
 function syncLegacyScadenza(p){const n=nearestDeadline(p);p.scadenza=n?.date||''}
-function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';const out={id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',deadlines:migrateDeadlines(p),anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',fatta:!!p.fatta,checklists:migrateLegacyChecklist(p),history:Array.isArray(p.history)?p.history.map(normalizeHistory):[]};syncLegacyScadenza(out);return out}
+function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';const out={id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',deadlines:migrateDeadlines(p),anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',infoCatastali:p.infoCatastali||'',fatta:!!p.fatta,checklists:migrateLegacyChecklist(p),history:Array.isArray(p.history)?p.history.map(normalizeHistory):[]};syncLegacyScadenza(out);return out}
 function normalizeTemplate(t){return{id:t?.id||uid(),name:t?.name||'Checklist',items:Array.isArray(t?.items)?t.items.map(i=>({id:i?.id||uid(),text:i?.text||''})):[]}}
 function normalizeCandidatura(c){return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata}}
 function colorizePriority(sel){const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};sel.style.color=map[sel.value]||''}
@@ -122,6 +122,7 @@ function openDashboardPracticeCreator(){
       anticipo:'',accontoCliente:'',parcellaGeometra:'',
       statoPagamento:$('newp-pagamento').value,
       note:'',
+      infoCatastali:'',
       fatta:false,
       checklists:[],
       history:[]
@@ -142,7 +143,7 @@ function getClientList(){const map=new Map();pratiche.forEach(p=>{const name=(p.
 function renderClienti(){const q=($('client-search').value||'').trim().toLocaleLowerCase('it'),filter=$('client-filter').value;let list=getClientList();if(q)list=list.filter(c=>c.name.toLocaleLowerCase('it').includes(q));if(filter==='active')list=list.filter(c=>c.active>0);if(filter==='archived')list=list.filter(c=>c.active===0&&c.arch>0);$('clienti-count').textContent=list.length===1?'1 cliente':`${list.length} clienti`;const tb=$('tbody-clienti');if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessun cliente corrisponde alla ricerca.</td></tr>';return}tb.innerHTML=list.map(c=>`<tr><td><strong>${esc(c.name)}</strong></td><td class="mono">${c.active}</td><td class="mono">${c.arch}</td><td class="muted">${esc([c.last?.comune,c.last?.via].filter(Boolean).join(' · ')||'—')}</td><td><button class="btn" data-client-open="${esc(c.name)}">Apri</button></td></tr>`).join('');tb.querySelectorAll('[data-client-open]').forEach(b=>b.addEventListener('click',()=>{const p=pratiche.find(x=>x.cliente===b.dataset.clientOpen&&!x.fatta)||pratiche.find(x=>x.cliente===b.dataset.clientOpen);if(p)openPracticeContext(p.id)}))}
 $('client-search').addEventListener('input',renderClienti);$('client-filter').addEventListener('change',renderClienti);
 
-function renderTemplateSelects(){const opts='<option value="">Seleziona modello...</option>'+templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');$('template-to-practice').innerHTML=opts}
+function renderTemplateSelects(){const legacy=$('template-to-practice');if(legacy){legacy.innerHTML='<option value="">Seleziona modello...</option>'+templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}}
 function resetTemplateEditor(){editingTemplateId='';$('template-name').value='';$('template-items').innerHTML='';$('template-status').textContent='';addTemplateEditorItem('')}
 function addTemplateEditorItem(text){const row=document.createElement('div');row.className='template-item';row.innerHTML=`<input type="text" value="${esc(text)}" placeholder="Documento / attività richiesta"><button class="del-btn" type="button" data-template-item-del="1">✕</button>`;$('template-items').appendChild(row)}
 function renderTemplates(){renderTemplateSelects();$('template-count').textContent=templates.length===1?'1 checklist':`${templates.length} checklist`;const host=$('template-list');if(!templates.length){host.innerHTML='<div class="template-empty">Non hai ancora creato modelli di checklist.</div>';return}host.innerHTML=templates.map(t=>`<div class="template-card"><div class="template-card-head"><div><div class="template-card-name">${esc(t.name)}</div><div class="template-card-count">${t.items.length} voci</div></div><div class="template-card-actions"><button class="btn" data-template-edit="${t.id}">Modifica</button><button class="btn danger" data-template-del="${t.id}">Elimina</button></div></div><div class="template-preview">${t.items.slice(0,5).map(i=>esc(i.text)).join(' · ')}${t.items.length>5?' · …':''}</div></div>`).join('');host.querySelectorAll('[data-template-edit]').forEach(b=>b.addEventListener('click',()=>editTemplate(b.dataset.templateEdit)));host.querySelectorAll('[data-template-del]').forEach(b=>b.addEventListener('click',()=>deleteTemplate(b.dataset.templateDel)))}
@@ -154,67 +155,76 @@ $('save-template').addEventListener('click',async()=>{const name=$('template-nam
 
 function currentPractice(){return pratiche.find(p=>p.id===managerPracticeId&&!p.fatta)}
 function currentChecklist(){const p=currentPractice();return p?.checklists?.find(c=>c.id===managerChecklistId)||null}
-function ensureManagerChecklist(){const p=currentPractice();if(!p){managerChecklistId='';return}if(!p.checklists.some(c=>c.id===managerChecklistId))managerChecklistId=p.checklists[0]?.id||''}
-function renderManagerSelects(){const psel=$('practice-manager-select'),att=pratiche.filter(p=>!p.fatta);psel.innerHTML='<option value="">Seleziona una pratica...</option>'+att.map(p=>`<option value="${p.id}">${esc((p.cliente||'Senza cliente')+' — '+(p.pratica||'Pratica')+(p.comune?' — '+p.comune:''))}</option>`).join('');if(att.some(p=>p.id===managerPracticeId))psel.value=managerPracticeId;else{managerPracticeId='';managerChecklistId='';psel.value=''}ensureManagerChecklist();const p=currentPractice(),csel=$('practice-checklist-select');csel.innerHTML='<option value="">Nessuna checklist</option>'+(p?.checklists||[]).map(c=>`<option value="${c.id}">${esc(c.name)}${c.sent?' — inviata':''}</option>`).join('');csel.value=managerChecklistId||'';renderTemplateSelects()}
+function ensureManagerChecklist(){const p=currentPractice();if(!p){managerChecklistId='';return}if(!p.checklists.some(c=>c.id===managerChecklistId))managerChecklistId=p.checklists.find(c=>!c.sent)?.id||p.checklists[0]?.id||''}
+function renderManagerPracticeSelect(){const sel=$('practice-manager-select'),att=pratiche.filter(p=>!p.fatta);sel.innerHTML='<option value="">Seleziona una pratica...</option>'+att.map(p=>`<option value="${p.id}">${esc((p.cliente||'Senza cliente')+' — '+(p.pratica||'Pratica'))}</option>`).join('');if(att.some(p=>p.id===managerPracticeId))sel.value=managerPracticeId;else{managerPracticeId='';managerChecklistId='';sel.value=''}}
 function uniqueChecklistName(p,name){let base=name||'Checklist',n=base,i=2;const names=new Set(p.checklists.map(c=>c.name.toLocaleLowerCase('it')));while(names.has(n.toLocaleLowerCase('it'))){n=`${base} (${i++})`}return n}
-function addTemplateToPractice(){const p=currentPractice(),tid=$('template-to-practice').value,t=templates.find(x=>x.id===tid);if(!p){alert('Seleziona prima una pratica.');return}if(!t){alert('Seleziona una checklist creata.');return}const c={id:uid(),name:uniqueChecklistName(p,t.name),templateId:t.id,items:t.items.map(i=>({id:uid(),text:i.text,done:false})),sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;$('template-to-practice').value='';save('pratiche-data',pratiche,statusP||null);renderManager()}
-function addEmptyChecklist(){const p=currentPractice();if(!p){alert('Seleziona prima una pratica.');return}const raw=prompt('Nome della nuova checklist:','');if(raw===null)return;const name=raw.trim();if(!name)return;const c={id:uid(),name:uniqueChecklistName(p,name),templateId:'',items:[],sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;save('pratiche-data',pratiche,statusP||null);renderManager()}
+function createPracticeChecklistFromTemplate(p,t){const c={id:uid(),name:uniqueChecklistName(p,t.name),templateId:t.id,items:t.items.map(i=>({id:uid(),text:i.text,done:false})),sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;return c}
+function addEmptyChecklistToPractice(p){const raw=prompt('Nome della nuova checklist:','');if(raw===null)return null;const name=raw.trim();if(!name)return null;const c={id:uid(),name:uniqueChecklistName(p,name),templateId:'',items:[],sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;return c}
+
 function syncHistoryForChecklist(p,c){let h=p.history.find(x=>x.type==='checklist-send'&&x.checklistId===c.id);if(!c.sent){p.history=p.history.filter(x=>!(x.type==='checklist-send'&&x.checklistId===c.id));return}if(!h){h={id:uid(),type:'checklist-send',checklistId:c.id,title:'',date:'',protocol:'',protocolDate:'',note:''};p.history.push(h)}h.title=`Checklist ${c.name} inviata`;h.date=c.sentAt;h.protocol=c.protocol;h.protocolDate=c.protocolDate;h.note=c.sendNote}
 function renderHistory(p){const events=p.history.slice();if(p.presentata)events.push({id:'presentata',type:'presentata',title:'Pratica presentata',date:p.presentata,protocol:'',protocolDate:'',note:''});events.sort((a,b)=>(b.date||'').localeCompare(a.date||''));if(!events.length)return'<div class="timeline-empty">Nessun evento registrato.</div>';return events.map(h=>`<div class="timeline-item-v6">${h.type==='checklist-send'?`<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Checklist')}</div><input class="history-date-input" type="date" data-history-checklist="${h.checklistId}" value="${esc(h.date)}"></div>`:`<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Evento')}</div><div class="timeline-date">${formatDate(h.date)}</div></div>`}${h.protocol?`<div class="timeline-protocol">Protocollo: ${esc(h.protocol)}${h.protocolDate?' · '+formatDate(h.protocolDate):''}</div>`:''}${h.note?`<div class="timeline-sub">${esc(h.note)}</div>`:''}</div>`).join('')}
-function renderProtocolBox(c){if(!c.sent)return'';return`<div class="send-box sent"><div class="send-box-head"><div><div class="send-box-title">Dati invio / protocollo</div><div class="send-box-note">La checklist è già nella storia pratica. Puoi completare o correggere questi dati.</div></div></div><div class="send-grid"><label><span class="field-label">Data invio</span><input id="send-date" type="date" value="${esc(c.sentAt)}"></label><label><span class="field-label">Protocollo</span><input id="send-protocol" type="text" value="${esc(c.protocol)}" placeholder="Es. PG 12345/2026"></label><label><span class="field-label">Data protocollo</span><input id="send-protocol-date" type="date" value="${esc(c.protocolDate)}"></label></div><label class="send-note-field"><span class="field-label">Nota invio</span><textarea id="send-note" placeholder="Nota facoltativa...">${esc(c.sendNote)}</textarea></label><div class="send-actions"><button class="btn" id="reopen-checklist" type="button">Riapri checklist</button><button class="btn gold" id="save-send-data" type="button">Salva dati</button></div></div>`}
+
+function renderProtocolBox(c){if(!c.sent)return'';return`<div class="send-box sent"><div class="send-box-head"><div><div class="send-box-title">Dati invio / protocollo</div><div class="send-box-note">Puoi completare o correggere protocollo e date.</div></div></div><div class="send-grid"><label><span class="field-label">Data invio</span><input id="send-date" type="date" value="${esc(c.sentAt)}"></label><label><span class="field-label">Protocollo</span><input id="send-protocol" type="text" value="${esc(c.protocol)}" placeholder="Es. PG 12345/2026"></label><label><span class="field-label">Data protocollo</span><input id="send-protocol-date" type="date" value="${esc(c.protocolDate)}"></label></div><label class="send-note-field"><span class="field-label">Nota invio</span><textarea id="send-note" placeholder="Nota facoltativa...">${esc(c.sendNote)}</textarea></label><div class="send-actions"><button class="btn" id="reopen-checklist" type="button">Riapri checklist</button><button class="btn gold" id="save-send-data" type="button">Salva dati</button></div></div>`}
+
 function renderWorkingChecklists(p){const list=p.checklists.filter(c=>!c.sent);if(!list.length)return'<div class="working-empty">Nessuna checklist in lavorazione.</div>';return list.map(c=>{const done=c.items.filter(i=>i.done).length,total=c.items.length;return`<div class="working-check-row" data-working-id="${c.id}"><input class="working-complete-check" type="checkbox" data-working-complete="${c.id}" title="Sposta in storia pratica"><div class="working-check-info"><button type="button" class="working-check-name" data-working-open="${c.id}">${esc(c.name)}</button><div class="working-check-progress">${done}/${total} completate</div></div><input class="working-date" type="date" data-working-date="${c.id}" value="${esc(c.workDate||todayISO())}"></div>`}).join('')}
-function renderManagerDeadlines(p){const list=(p.deadlines||[]).filter(d=>d.date);if(!list.length)return'<div class="manager-deadlines-empty">Nessuna scadenza inserita.</div>';return list.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{const s=deadlineStatusDate(d.date);return`<div class="manager-deadline-row"><div><div class="manager-deadline-reason">${esc(d.reason||'Scadenza')}</div><div class="manager-deadline-date">${formatDate(d.date)}</div></div><span class="deadline-status ${s.cls}">${s.label}</span></div>`}).join('')}
-function renderChecklistPicker(p){
-  const active=p.checklists||[];
-  return `<div class="checklist-picker-v8">
-    <label><span class="field-label">Checklist</span>
-      <select id="manager-checklist-select">
-        <option value="">Seleziona checklist...</option>
-        ${active.map(c=>`<option value="${c.id}" ${c.id===managerChecklistId?'selected':''}>${esc(c.name)}${c.sent?' · inviata':''}</option>`).join('')}
-      </select>
-    </label>
-    <div class="checklist-add-row">
-      <select id="manager-template-select">
-        <option value="">Aggiungi da modello...</option>
-        ${checklistTemplates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}
-      </select>
-      <button class="btn" id="add-template-to-practice" type="button">Aggiungi</button>
-      <button class="btn" id="add-empty-checklist" type="button">+ Vuota</button>
+
+function renderManagerDeadlinesEditor(p){const list=(p.deadlines||[]);return `<div class="manager-deadline-editor-list">${list.length?list.map(d=>`<div class="manager-deadline-edit-row" data-manager-deadline="${d.id}"><input type="date" data-md-f="date" value="${esc(d.date)}"><input type="text" data-md-f="reason" value="${esc(d.reason)}" placeholder="Motivo della scadenza"><button class="del-btn" type="button" data-md-delete="${d.id}">✕</button></div>`).join(''):'<div class="manager-deadlines-empty">Nessuna scadenza inserita.</div>'}</div>`}
+
+function renderChecklistPanel(c){const done=c.items.filter(i=>i.done).length,total=c.items.length;return`<div class="check-context"><div><div class="check-context-name">${esc(c.name)}</div><div class="check-context-meta">${done}/${total} completate${c.sent?' · inviata '+formatDate(c.sentAt):''}</div></div><div class="check-context-actions">${!c.sent?'<button class="btn" id="add-check-item" type="button">+ Documento</button>':''}<button class="btn danger" id="delete-practice-checklist" type="button">Elimina</button></div></div><div class="check-list" id="check-list">${total?c.items.map(i=>`<div class="check-item-v6 ${i.done?'done':''} ${c.sent?'sent':''}" data-check-id="${i.id}"><input type="checkbox" data-check-f="done" ${i.done?'checked':''} ${c.sent?'disabled':''}><input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Documento / attività" ${c.sent?'readonly':''}><button class="del-btn" data-check-del="1" ${c.sent?'disabled':''}>✕</button></div>`).join(''):'<div class="check-empty">Checklist vuota. Premi “+ Documento” per aggiungere una voce solo a questa pratica.</div>'}</div>${renderProtocolBox(c)}`}
+
+function renderChecklistFooter(p){return`<div class="checklist-footer-v9">
+  <label><span class="field-label">Checklist della pratica</span><select id="manager-checklist-select"><option value="">Nessuna checklist</option>${p.checklists.map(c=>`<option value="${c.id}" ${c.id===managerChecklistId?'selected':''}>${esc(c.name)}${c.sent?' · inviata':''}</option>`).join('')}</select></label>
+  <div class="checklist-model-add-v9">
+    <label><span class="field-label">Aggiungi da modello</span><select id="manager-template-select"><option value="">Seleziona modello...</option>${templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
+    <button class="btn gold" id="add-template-to-practice" type="button">Aggiungi</button>
+  </div>
+  <button class="btn" id="add-empty-checklist" type="button">+ Checklist vuota</button>
+</div>`}
+
+function renderPracticeHero(p){return`<div class="practice-hero-v9">
+  <div class="practice-hero-main">
+    <label class="hero-client-label"><span class="field-label">Società / Cliente</span><input id="manager-client" class="hero-client-input" type="text" value="${esc(p.cliente)}" placeholder="Società o cliente"></label>
+    <label class="hero-object-label"><span class="field-label">Oggetto pratica</span><input id="manager-object" class="hero-object-input" type="text" value="${esc(p.pratica)}" placeholder="Oggetto della pratica"></label>
+    <div class="hero-location-grid">
+      <label><span class="field-label">Comune</span><input id="manager-comune" type="text" value="${esc(p.comune)}" placeholder="Comune"></label>
+      <label><span class="field-label">Via</span><input id="manager-via" type="text" value="${esc(p.via)}" placeholder="Via / indirizzo"></label>
     </div>
-  </div>`;
-}
+  </div>
+  <div class="practice-hero-side">
+    <label><span class="field-label">Informazioni catastali</span><textarea id="manager-catasto" class="catasto-note-v9" placeholder="Es. Foglio 12, particella 345, sub 7...">${esc(p.infoCatastali||'')}</textarea></label>
+    <div class="hero-status-grid">
+      <label><span class="field-label">Priorità</span><select id="manager-priority" class="priority-select"><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option></select></label>
+      <label><span class="field-label">Pagamento</span><select id="manager-payment" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></label>
+    </div>
+  </div>
+</div>`}
+
 function renderManager(){
-  renderManagerSelects();
+  renderManagerPracticeSelect();
   const body=$('manager-body'),p=currentPractice();
   if(!p){body.innerHTML='<div class="manager-empty">Seleziona una pratica attiva per aprirla.</div>';return}
   ensureManagerChecklist();
   const c=currentChecklist();
-  const sentCount=p.checklists.filter(x=>x.sent).length;
+
   body.innerHTML=`
-    <div class="manager-summary manager-summary-v8">
-      <div class="summary-cell"><div class="label">Cliente</div><div class="value">${esc(p.cliente||'—')}</div></div>
-      <div class="summary-cell"><div class="label">Pratica</div><div class="value">${esc(p.pratica||'—')}</div></div>
-      <div class="summary-cell"><div class="label">Indirizzo</div><div class="value">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div></div>
-      <div class="summary-cell"><div class="label">Priorità</div><div class="value"><select id="manager-priority" class="priority-select"><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option></select></div></div>
-      <div class="summary-cell"><div class="label">Pagamento</div><div class="value"><select id="manager-payment" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></div></div>
-    </div>
+    ${renderPracticeHero(p)}
 
     <div class="manager-deadlines-block">
       <div class="manager-section-head">
         <div class="manager-section-title">Scadenze pratica</div>
         <button class="btn" id="manager-add-deadline" type="button">+ Scadenza</button>
       </div>
-      <div id="manager-deadlines-editor">${renderManagerDeadlinesEditor(p)}</div>
+      ${renderManagerDeadlinesEditor(p)}
     </div>
 
-    <div class="manager-thirds-v8">
+    <div class="manager-thirds-v8 manager-thirds-v9">
       <section class="manager-third checklist-third">
         <div class="manager-third-head"><h3>Checklist</h3></div>
         <div class="manager-third-body">
-          ${c?renderChecklistPanel(c):'<div class="manager-empty compact">Nessuna checklist selezionata.</div>'}
+          ${c?renderChecklistPanel(c):'<div class="manager-empty compact">Nessuna checklist selezionata. In basso puoi aggiungerne una da un modello come CILA.</div>'}
         </div>
         <div class="manager-third-footer">
-          ${renderChecklistPicker(p)}
+          ${renderChecklistFooter(p)}
         </div>
       </section>
 
@@ -236,33 +246,103 @@ function renderManager(){
         </div>
       </section>
     </div>`;
-  bindManagerEvents(p,c);
-  bindManagerV8(p);
-}
-function renderManagerDeadlinesEditor(p){
-  const list=(p.deadlines||[]);
-  return `<div class="manager-deadline-editor-list">
-    ${list.length?list.map(d=>`<div class="manager-deadline-edit-row" data-manager-deadline="${d.id}">
-      <input type="date" data-md-f="date" value="${esc(d.date)}">
-      <input type="text" data-md-f="reason" value="${esc(d.reason)}" placeholder="Motivo">
-      <button class="del-btn" type="button" data-md-delete="${d.id}">✕</button>
-    </div>`).join(''):'<div class="manager-deadlines-empty">Nessuna scadenza inserita.</div>'}
-  </div>`;
-}
-function bindManagerV8(p){
-  const pri=$('manager-priority'); if(pri){colorizePriority(pri);pri.addEventListener('change',()=>{p.priorita=pri.value;colorizePriority(pri);save('pratiche-data',pratiche,statusP||null);renderDashboard()})}
-  const pay=$('manager-payment'); if(pay)pay.addEventListener('change',()=>{p.statoPagamento=pay.value;pay.className='pay-select '+payClass(p.statoPagamento);save('pratiche-data',pratiche,statusP||null);renderDashboard()});
-  const csel=$('manager-checklist-select');if(csel)csel.addEventListener('change',()=>{managerChecklistId=csel.value;renderManager()});
-  const addT=$('add-template-to-practice');if(addT)addT.addEventListener('click',()=>{const tid=$('manager-template-select').value;if(!tid)return;const t=checklistTemplates.find(x=>x.id===tid);if(!t)return;const c={id:uid(),name:uniqueChecklistName(p,t.name),templateId:t.id,items:t.items.map(i=>({id:uid(),text:i.text,done:false})),sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;save('pratiche-data',pratiche,statusP||null);renderManager()});
-  const addE=$('add-empty-checklist');if(addE)addE.addEventListener('click',()=>{const name=prompt('Nome della nuova checklist:','Nuova checklist');if(!name?.trim())return;const c={id:uid(),name:uniqueChecklistName(p,name.trim()),templateId:'',items:[],sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;save('pratiche-data',pratiche,statusP||null);renderManager()});
-  const addD=$('manager-add-deadline');if(addD)addD.addEventListener('click',()=>{p.deadlines.push({id:uid(),date:'',reason:''});save('pratiche-data',pratiche,statusP||null);renderManager();renderDashboard();renderScadenze()});
-  document.querySelectorAll('[data-manager-deadline]').forEach(row=>{
-    row.querySelectorAll('[data-md-f]').forEach(inp=>inp.addEventListener('change',()=>{const d=p.deadlines.find(x=>x.id===row.dataset.managerDeadline);if(!d)return;d[inp.dataset.mdF]=inp.value;syncLegacyScadenza(p);save('pratiche-data',pratiche,statusP||null);renderDashboard();renderScadenze()}));
-  });
-  document.querySelectorAll('[data-md-delete]').forEach(btn=>btn.addEventListener('click',()=>{p.deadlines=p.deadlines.filter(d=>d.id!==btn.dataset.mdDelete);syncLegacyScadenza(p);save('pratiche-data',pratiche,statusP||null);renderManager();renderDashboard();renderScadenze()}));
+
+  bindManager(p,c);
 }
 
-$('practice-manager-select').addEventListener('change',e=>{managerPracticeId=e.target.value;const p=currentPractice();managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';renderManager()});$('practice-checklist-select').addEventListener('change',e=>{managerChecklistId=e.target.value;renderManager()});
+function completeWorkingChecklist(p,c){const allDone=c.items.length===0||c.items.every(i=>i.done);if(!allDone&&!confirm(`La checklist “${c.name}” ha ancora voci non completate. Vuoi comunque spostarla nella storia pratica?`))return;c.sent=true;c.sentAt=c.workDate||todayISO();syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP||null);renderManager()}
+
+function bindManager(p,c){
+  const bindText=(id,key,after)=>{const el=$(id);if(!el)return;el.addEventListener('input',()=>{p[key]=el.value;if(after)after()});el.addEventListener('change',()=>save('pratiche-data',pratiche,statusP||null))};
+  bindText('manager-client','cliente',()=>{renderDashboard()});
+  bindText('manager-object','pratica',()=>{renderDashboard()});
+  bindText('manager-comune','comune',()=>{renderDashboard()});
+  bindText('manager-via','via',()=>{renderDashboard()});
+  bindText('manager-catasto','infoCatastali');
+
+  const pri=$('manager-priority');if(pri){colorizePriority(pri);pri.addEventListener('change',()=>{p.priorita=pri.value;colorizePriority(pri);save('pratiche-data',pratiche,statusP||null);renderDashboard()})}
+  const pay=$('manager-payment');if(pay){pay.addEventListener('change',()=>{p.statoPagamento=pay.value;pay.className='pay-select '+payClass(p.statoPagamento);save('pratiche-data',pratiche,statusP||null);renderDashboard()})}
+
+  const notes=$('manager-notes');if(notes){notes.addEventListener('input',()=>p.note=notes.value);notes.addEventListener('change',()=>save('pratiche-data',pratiche,statusP||null))}
+
+  const csel=$('manager-checklist-select');if(csel)csel.addEventListener('change',()=>{managerChecklistId=csel.value;renderManager()});
+
+  const addTemplate=$('add-template-to-practice');if(addTemplate)addTemplate.addEventListener('click',()=>{
+    const tid=$('manager-template-select')?.value;
+    const t=templates.find(x=>x.id===tid);
+    if(!t){alert('Seleziona prima un modello di checklist.');return}
+    createPracticeChecklistFromTemplate(p,t);
+    save('pratiche-data',pratiche,statusP||null);
+    renderManager();
+  });
+
+  const addEmpty=$('add-empty-checklist');if(addEmpty)addEmpty.addEventListener('click',()=>{
+    const created=addEmptyChecklistToPractice(p);
+    if(!created)return;
+    save('pratiche-data',pratiche,statusP||null);
+    renderManager();
+  });
+
+  const addDeadline=$('manager-add-deadline');if(addDeadline)addDeadline.addEventListener('click',()=>{
+    p.deadlines.push({id:uid(),date:'',reason:''});
+    save('pratiche-data',pratiche,statusP||null);
+    renderManager();renderDashboard();renderScadenze();
+  });
+  document.querySelectorAll('[data-manager-deadline]').forEach(row=>{
+    row.querySelectorAll('[data-md-f]').forEach(inp=>inp.addEventListener('change',()=>{
+      const d=p.deadlines.find(x=>x.id===row.dataset.managerDeadline);if(!d)return;
+      d[inp.dataset.mdF]=inp.value;syncLegacyScadenza(p);
+      save('pratiche-data',pratiche,statusP||null);renderDashboard();renderScadenze();
+    }));
+  });
+  document.querySelectorAll('[data-md-delete]').forEach(btn=>btn.addEventListener('click',()=>{
+    p.deadlines=p.deadlines.filter(d=>d.id!==btn.dataset.mdDelete);syncLegacyScadenza(p);
+    save('pratiche-data',pratiche,statusP||null);renderManager();renderDashboard();renderScadenze();
+  }));
+
+  document.querySelectorAll('[data-working-open]').forEach(b=>b.addEventListener('click',()=>{managerChecklistId=b.dataset.workingOpen;renderManager()}));
+  document.querySelectorAll('[data-working-date]').forEach(inp=>inp.addEventListener('change',()=>{const wc=p.checklists.find(x=>x.id===inp.dataset.workingDate);if(wc){wc.workDate=inp.value||todayISO();save('pratiche-data',pratiche,statusP||null)}}));
+  document.querySelectorAll('[data-working-complete]').forEach(ch=>ch.addEventListener('change',()=>{if(!ch.checked)return;const wc=p.checklists.find(x=>x.id===ch.dataset.workingComplete);if(wc)completeWorkingChecklist(p,wc)}));
+  document.querySelectorAll('[data-history-checklist]').forEach(inp=>inp.addEventListener('change',()=>{const hc=p.checklists.find(x=>x.id===inp.dataset.historyChecklist);if(!hc)return;hc.sentAt=inp.value||todayISO();hc.workDate=hc.sentAt;syncHistoryForChecklist(p,hc);save('pratiche-data',pratiche,statusP||null);renderManager()}));
+
+  if(!c)return;
+  const list=$('check-list');if(list){
+    list.addEventListener('input',e=>{const row=e.target.closest('[data-check-id]'),item=c.items.find(i=>i.id===row?.dataset.checkId);if(item&&e.target.dataset.checkF==='text')item.text=e.target.value});
+    list.addEventListener('change',e=>{const row=e.target.closest('[data-check-id]'),item=c.items.find(i=>i.id===row?.dataset.checkId);if(!item)return;if(e.target.dataset.checkF==='done')item.done=e.target.checked;save('pratiche-data',pratiche,statusP||null);renderManager()});
+    list.addEventListener('click',e=>{if(!e.target.dataset.checkDel||c.sent)return;const row=e.target.closest('[data-check-id]');c.items=c.items.filter(i=>i.id!==row.dataset.checkId);save('pratiche-data',pratiche,statusP||null);renderManager()});
+  }
+
+  const addItem=$('add-check-item');if(addItem)addItem.addEventListener('click',()=>{
+    if(c.sent)return;
+    c.items.push({id:uid(),text:'',done:false});
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+    const inputs=document.querySelectorAll('#check-list input[data-check-f="text"]');if(inputs.length)inputs[inputs.length-1].focus();
+  });
+
+  const del=$('delete-practice-checklist');if(del)del.addEventListener('click',()=>{
+    if(!confirm(`Eliminare la checklist “${c.name}” da questa pratica?`))return;
+    p.checklists=p.checklists.filter(x=>x.id!==c.id);
+    p.history=p.history.filter(h=>h.checklistId!==c.id);
+    managerChecklistId=p.checklists.find(x=>!x.sent)?.id||p.checklists[0]?.id||'';
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  });
+
+  const saveBtn=$('save-send-data');if(saveBtn)saveBtn.addEventListener('click',()=>{
+    c.sentAt=$('send-date').value||todayISO();c.workDate=c.sentAt;c.protocol=$('send-protocol').value.trim();c.protocolDate=$('send-protocol-date').value;c.sendNote=$('send-note').value.trim();syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP||null);renderManager()
+  });
+
+  const reopen=$('reopen-checklist');if(reopen)reopen.addEventListener('click',()=>{
+    if(!confirm('Riaprire questa checklist? Verrà tolta dalla storia pratica e tornerà tra quelle in lavorazione.'))return;
+    c.sent=false;c.workDate=c.sentAt||todayISO();c.sentAt='';syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP||null);renderManager()
+  });
+}
+
+$('practice-manager-select').addEventListener('change',e=>{
+  managerPracticeId=e.target.value;
+  const p=currentPractice();
+  managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';
+  renderManager();
+});
 
 function renderDerived(){renderDashboard();renderScadenze();renderClienti();renderManager();renderTemplates()}
 window.addEventListener('cloud-storage-change',event=>{try{const d=event.detail||{};if(d.key==='pratiche-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizePratica);if(JSON.stringify(incoming)!==JSON.stringify(pratiche)){pratiche=incoming;renderPratiche();renderDerived()}if(statusP)statusP.textContent='sincronizzato';if(statusPA)statusPA.textContent='sincronizzato'}}else if(d.key==='candidature-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizeCandidatura);if(JSON.stringify(incoming)!==JSON.stringify(candidature)){candidature=incoming;renderCandidature()}statusC.textContent=statusCA.textContent='sincronizzato'}}else if(d.key==='checklist-templates-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizeTemplate);if(JSON.stringify(incoming)!==JSON.stringify(templates)){templates=incoming;renderTemplates();renderManager()}}}}catch(e){console.warn('Aggiornamento cloud non applicato',e)}});
