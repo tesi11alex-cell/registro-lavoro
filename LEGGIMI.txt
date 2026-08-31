@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V10
+GESTIONALE REGISTRO LAVORO V11
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,14 +8,13 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-MODIFICHE V10
-- Gestione pratica: Checklist e Note pratica affiancate 50% / 50%.
-- Storia pratica spostata sotto, a tutta larghezza.
-- Accanto al titolo “Checklist” c'è il menu a tendina per scegliere una checklist già aggiunta alla pratica.
-- Il nome della checklist è modificabile direttamente.
-- Nella stessa riga: + Documento ed Elimina.
-- Sotto viene mostrato l'elenco dei documenti/attività.
-- + Documento aggiunge una voce solo alla checklist di quella pratica.
-- In basso: “Aggiungi checklist preimpostata” con menu dei modelli creati in Crea checklist.
-- Rimane anche la possibilità di creare una checklist vuota.
-- La checklist può essere chiusa e spostata in Storia con data modificabile.
+CHECKLIST SEMPLIFICATE:
+- In Gestione pratica, nella metà sinistra, in alto c'è un solo menu “Checklist”.
+- Selezioni una checklist già aggiunta e sotto vedi immediatamente i documenti.
+- Il riepilogo mostra quanti documenti sono completati e quanti mancano.
+- Il nome checklist resta modificabile.
+- + Documento aggiunge una voce solo alla pratica corrente.
+- I documenti completati vengono barrati.
+- In basso trovi “Aggiungi checklist preimpostata” per scegliere uno dei modelli creati in Crea checklist.
+- I comandi secondari sono spostati in basso per rendere la schermata più leggibile.
+- Resta la possibilità di chiudere la checklist e spostarla in Storia con data modificabile.

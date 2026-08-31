@@ -575,3 +575,226 @@ body.auth-pending .wrap{display:none}
   .checklist-model-add-v10{grid-template-columns:1fr}
   .timeline-v10{grid-template-columns:1fr}
 }
+
+
+/* V11 — Checklist semplificate e focalizzate su ciò che manca */
+.simple-checklist-head-v11{display:block!important;padding:12px 14px!important}
+.simple-checklist-selector-v11{
+  display:grid;
+  grid-template-columns:auto minmax(180px,1fr);
+  gap:10px;
+  align-items:center;
+}
+.simple-selector-label-v11{
+  font-size:12px;
+  font-weight:650;
+}
+.simple-checklist-selector-v11 select{
+  background:var(--panel2)!important;
+  border:1px solid var(--line)!important;
+  font-size:11px!important;
+  min-height:36px;
+}
+
+.simple-checklist-body-v11{padding:14px!important}
+.simple-checklist-v11{display:flex;flex-direction:column;gap:0}
+.simple-checklist-title-v11{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+  padding-bottom:10px;
+}
+.simple-checklist-name-v11{
+  background:transparent!important;
+  border:0!important;
+  padding:0!important;
+  font-size:18px!important;
+  font-weight:680!important;
+  letter-spacing:-.01em;
+}
+.simple-checklist-name-v11:focus{
+  background:var(--panel2)!important;
+  border:1px solid var(--line)!important;
+  padding:6px 7px!important;
+}
+.simple-checklist-summary-v11{
+  margin-top:4px;
+  font:500 9px 'IBM Plex Mono',monospace;
+  color:var(--faint);
+}
+.simple-progress-v11{
+  height:3px;
+  border-radius:99px;
+  background:#1a2027;
+  overflow:hidden;
+  margin-bottom:8px;
+}
+.simple-progress-v11 span{
+  display:block;
+  height:100%;
+  background:var(--green);
+  transition:width .15s ease;
+}
+
+.simple-document-list-v11{border-top:1px solid var(--line2)}
+.simple-document-row-v11{
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr) 28px;
+  gap:8px;
+  align-items:center;
+  min-height:48px;
+  padding:7px 2px;
+  border-bottom:1px solid var(--line2);
+}
+.simple-document-row-v11 input[type=checkbox]{
+  appearance:none;
+  width:18px;
+  height:18px;
+  border:1px solid #46505a;
+  border-radius:4px;
+  background:#090d11;
+  position:relative;
+  cursor:pointer;
+}
+.simple-document-row-v11 input[type=checkbox]:checked{
+  background:var(--greenSoft);
+  border-color:var(--green);
+}
+.simple-document-row-v11 input[type=checkbox]:checked::after{
+  content:'✓';
+  position:absolute;
+  left:2px;
+  top:-2px;
+  font-size:14px;
+  font-weight:700;
+  color:#85be93;
+}
+.simple-document-row-v11 input[type=text]{
+  background:transparent!important;
+  border-color:transparent!important;
+  padding:6px 4px!important;
+  font-size:12px!important;
+}
+.simple-document-row-v11 input[type=text]:focus{
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+}
+.simple-document-row-v11.done input[type=text]{
+  color:var(--faint)!important;
+  text-decoration:line-through;
+}
+.simple-delete-doc-v11{
+  border:0;
+  background:transparent;
+  color:var(--faint);
+  border-radius:5px;
+  padding:6px;
+}
+.simple-delete-doc-v11:hover{color:var(--red);background:var(--redSoft)}
+.simple-empty-v11{
+  padding:22px 6px;
+  text-align:center;
+  color:var(--faint);
+  font-size:11px;
+}
+
+.simple-checklist-close-v11{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:12px;
+  padding:10px;
+  border:1px solid var(--line2);
+  border-radius:6px;
+  background:#0b0f13;
+}
+.simple-checklist-close-v11>label:first-child{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.simple-checklist-close-v11 input[type=date]{
+  width:150px;
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+}
+.simple-close-check-v11{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:var(--dim);
+  font-size:10px;
+}
+.simple-checklist-danger-v11{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+.simple-checklist-danger-v11 .btn{
+  font-size:9px;
+  padding:5px 7px;
+}
+
+.simple-checklist-footer-v11{padding:12px 14px!important}
+.simple-add-checklist-v11{display:flex;flex-direction:column;gap:8px}
+.simple-add-title-v11{
+  font-size:10px;
+  font-weight:650;
+}
+.simple-add-row-v11{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:7px;
+}
+.simple-add-row-v11 select{
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+}
+.simple-empty-checklist-link-v11{
+  align-self:flex-start;
+  border:0;
+  background:transparent;
+  color:var(--faint);
+  padding:2px 0;
+  font-size:9.5px;
+  text-decoration:underline;
+}
+.simple-empty-checklist-link-v11:hover{color:var(--text)}
+
+.simple-no-checklist-v11{
+  min-height:250px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:20px;
+}
+.simple-no-checklist-icon-v11{
+  width:36px;height:36px;
+  border:1px solid var(--line);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--green);
+  margin-bottom:10px;
+}
+.simple-no-checklist-title-v11{
+  font-size:12px;
+  font-weight:650;
+  margin-bottom:5px;
+}
+.simple-no-checklist-text-v11{
+  max-width:330px;
+  color:var(--faint);
+  font-size:10.5px;
+  line-height:1.45;
+}
+
+@media(max-width:760px){
+  .simple-checklist-selector-v11{grid-template-columns:1fr}
+  .simple-checklist-title-v11{align-items:flex-start;flex-direction:column}
+  .simple-checklist-close-v11{align-items:flex-start;flex-direction:column}
+  .simple-add-row-v11{grid-template-columns:1fr}
+}

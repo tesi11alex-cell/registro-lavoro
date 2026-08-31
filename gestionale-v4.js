@@ -171,66 +171,66 @@ function renderWorkingChecklists(p){const list=p.checklists.filter(c=>!c.sent);i
 function renderManagerDeadlinesEditor(p){const list=(p.deadlines||[]);return `<div class="manager-deadline-editor-list">${list.length?list.map(d=>`<div class="manager-deadline-edit-row" data-manager-deadline="${d.id}"><input type="date" data-md-f="date" value="${esc(d.date)}"><input type="text" data-md-f="reason" value="${esc(d.reason)}" placeholder="Motivo della scadenza"><button class="del-btn" type="button" data-md-delete="${d.id}">✕</button></div>`).join(''):'<div class="manager-deadlines-empty">Nessuna scadenza inserita.</div>'}</div>`}
 
 function renderChecklistPanel(c){
-  const done=c.items.filter(i=>i.done).length,total=c.items.length;
-  return `<div class="checklist-editor-v10">
-    <div class="checklist-name-row-v10">
-      <label>
-        <span class="field-label">Nome pratica / checklist</span>
-        <input id="current-checklist-name" class="checklist-name-input-v10" type="text" value="${esc(c.name)}" placeholder="Es. CILA">
-      </label>
-      <div class="checklist-main-actions-v10">
-        ${!c.sent?'<button class="btn gold" id="add-check-item" type="button">+ Documento</button>':''}
-        <button class="btn danger" id="delete-practice-checklist" type="button">Elimina</button>
+  const done=c.items.filter(i=>i.done).length,total=c.items.length,missing=total-done;
+  return `<div class="simple-checklist-v11">
+    <div class="simple-checklist-title-v11">
+      <div>
+        <input id="current-checklist-name" class="simple-checklist-name-v11" type="text" value="${esc(c.name)}" placeholder="Nome checklist">
+        <div class="simple-checklist-summary-v11">${total?`${done} completati · ${missing} mancanti`:'Nessun documento inserito'}${c.sent?' · chiusa il '+formatDate(c.sentAt):''}</div>
       </div>
+      ${!c.sent?'<button class="btn" id="add-check-item" type="button">+ Documento</button>':''}
     </div>
 
-    <div class="checklist-progress-v10">${done}/${total} documenti completati${c.sent?' · inserita in storia il '+formatDate(c.sentAt):''}</div>
+    <div class="simple-progress-v11"><span style="width:${total?Math.round(done/total*100):0}%"></span></div>
 
-    <div class="check-list check-list-v10" id="check-list">
+    <div class="simple-document-list-v11" id="check-list">
       ${total?c.items.map(i=>`
-        <div class="check-item-v6 ${i.done?'done':''} ${c.sent?'sent':''}" data-check-id="${i.id}">
+        <div class="simple-document-row-v11 ${i.done?'done':''}" data-check-id="${i.id}">
           <input type="checkbox" data-check-f="done" ${i.done?'checked':''} ${c.sent?'disabled':''}>
-          <input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Documento / attività" ${c.sent?'readonly':''}>
-          <button class="del-btn" data-check-del="1" ${c.sent?'disabled':''}>✕</button>
-        </div>`).join(''):'<div class="check-empty">Nessun documento. Premi “+ Documento” per aggiungere una voce solo a questa pratica.</div>'}
+          <input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Documento richiesto" ${c.sent?'readonly':''}>
+          ${!c.sent?'<button class="simple-delete-doc-v11" type="button" data-check-del="1" title="Elimina documento">✕</button>':''}
+        </div>`).join(''):'<div class="simple-empty-v11">Questa checklist è vuota. Aggiungi i documenti che ti servono.</div>'}
     </div>
 
     ${!c.sent?`
-      <div class="checklist-complete-v10">
-        <div>
-          <div class="field-label">Chiudi checklist e inserisci in storia</div>
-          <div class="checklist-complete-note-v10">La data resta modificabile anche dopo.</div>
-        </div>
-        <input id="current-checklist-work-date" type="date" value="${esc(c.workDate||todayISO())}">
-        <label class="complete-check-label-v10">
+      <div class="simple-checklist-close-v11">
+        <label>
+          <span class="field-label">Data chiusura / invio</span>
+          <input id="current-checklist-work-date" type="date" value="${esc(c.workDate||todayISO())}">
+        </label>
+        <label class="simple-close-check-v11">
           <input id="complete-current-checklist" class="working-complete-check" type="checkbox">
-          <span>Conferma</span>
+          <span>Sposta in storia</span>
         </label>
       </div>`:renderProtocolBox(c)}
+
+    <div class="simple-checklist-danger-v11">
+      <button class="btn danger" id="delete-practice-checklist" type="button">Elimina checklist</button>
+    </div>
   </div>`;
 }
 
 function renderChecklistHeaderSelect(p){
-  return `<div class="manager-third-head manager-third-head-v10">
-    <h3>Checklist</h3>
-    <select id="manager-checklist-select" class="checklist-switch-v10">
-      <option value="">Seleziona checklist...</option>
-      ${p.checklists.map(c=>`<option value="${c.id}" ${c.id===managerChecklistId?'selected':''}>${esc(c.name)}${c.sent?' · storia':''}</option>`).join('')}
+  return `<div class="simple-checklist-selector-v11">
+    <div class="simple-selector-label-v11">Checklist</div>
+    <select id="manager-checklist-select">
+      <option value="">Seleziona una checklist...</option>
+      ${p.checklists.map(c=>`<option value="${c.id}" ${c.id===managerChecklistId?'selected':''}>${esc(c.name)}${c.sent?' · in storia':''}</option>`).join('')}
     </select>
   </div>`;
 }
 
 function renderChecklistFooter(p){
-  return `<div class="checklist-footer-v10">
-    <div class="prebuilt-title-v10">Aggiungi checklist preimpostata</div>
-    <div class="checklist-model-add-v10">
+  return `<div class="simple-add-checklist-v11">
+    <div class="simple-add-title-v11">Aggiungi checklist preimpostata</div>
+    <div class="simple-add-row-v11">
       <select id="manager-template-select">
-        <option value="">Seleziona una checklist creata...</option>
+        <option value="">Scegli una checklist creata prima...</option>
         ${templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}
       </select>
       <button class="btn gold" id="add-template-to-practice" type="button">Aggiungi</button>
     </div>
-    <button class="btn subtle-v10" id="add-empty-checklist" type="button">+ Checklist vuota</button>
+    <button class="simple-empty-checklist-link-v11" id="add-empty-checklist" type="button">oppure crea una checklist vuota</button>
   </div>`;
 }
 
@@ -270,13 +270,20 @@ function renderManager(){
       ${renderManagerDeadlinesEditor(p)}
     </div>
 
-    <div class="manager-top-halves-v10">
-      <section class="manager-half-v10 checklist-half-v10">
-        ${renderChecklistHeaderSelect(p)}
-        <div class="manager-half-body-v10">
-          ${c?renderChecklistPanel(c):'<div class="manager-empty compact">Nessuna checklist selezionata.</div>'}
+    <div class="manager-top-halves-v10 manager-top-halves-v11">
+      <section class="manager-half-v10 checklist-half-v10 checklist-half-v11">
+        <div class="manager-third-head simple-checklist-head-v11">
+          ${renderChecklistHeaderSelect(p)}
         </div>
-        <div class="manager-half-footer-v10">
+        <div class="manager-half-body-v10 simple-checklist-body-v11">
+          ${c?renderChecklistPanel(c):`
+            <div class="simple-no-checklist-v11">
+              <div class="simple-no-checklist-icon-v11">✓</div>
+              <div class="simple-no-checklist-title-v11">Nessuna checklist selezionata</div>
+              <div class="simple-no-checklist-text-v11">Scegli una checklist già aggiunta dal menu sopra, oppure aggiungine una preimpostata qui sotto.</div>
+            </div>`}
+        </div>
+        <div class="manager-half-footer-v10 simple-checklist-footer-v11">
           ${renderChecklistFooter(p)}
         </div>
       </section>
