@@ -242,3 +242,76 @@ body.auth-pending .wrap{display:none}
 .template-layout{display:grid;grid-template-columns:minmax(430px,1.1fr) minmax(360px,.9fr);gap:12px}.template-editor{padding:14px}.template-editor>label{display:flex;flex-direction:column;gap:6px}.template-editor>label input{background:var(--panel2);border-color:var(--line)}.template-editor-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0 7px}.small-note-inline{font:500 9px 'IBM Plex Mono',monospace;color:var(--faint);margin-top:3px}.template-items{border-top:1px solid var(--line2)}.template-item{display:grid;grid-template-columns:1fr 28px;gap:8px;padding:8px 0;border-bottom:1px solid var(--line2)}.template-item input{background:var(--panel2);border-color:#20262e}.template-savebar{display:flex;align-items:center;gap:10px;margin-top:14px}.template-list{padding:0}.template-card{padding:12px 14px;border-bottom:1px solid var(--line2)}.template-card:last-child{border-bottom:0}.template-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.template-card-name{font-size:12px;font-weight:600}.template-card-count{font:500 9px 'IBM Plex Mono',monospace;color:var(--faint);margin-top:4px}.template-card-actions{display:flex;gap:6px}.template-preview{margin-top:8px;font-size:10px;color:var(--dim);line-height:1.55}.template-empty{padding:30px;text-align:center;color:var(--faint);font-size:11px}
 @media(max-width:1100px){.manager-toolbar-v6{grid-template-columns:1fr 1fr}.template-layout{grid-template-columns:1fr}}
 @media(max-width:760px){.manager-toolbar-v6{grid-template-columns:1fr}.manager-toolbar-actions{width:100%}.manager-toolbar-actions .btn{flex:1}.send-grid{grid-template-columns:1fr}.check-context{align-items:flex-start;flex-direction:column}.template-card-head{flex-direction:column}.template-card-actions{width:100%}.template-card-actions .btn{flex:1}}
+
+
+/* V7 — ordine pratiche, dashboard 2/3 + 1/3, scadenze multiple, checklist in lavorazione */
+.dashboard-grid-v7{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:12px;align-items:start}
+.dashboard-grid-v7 .panel+.panel{margin-top:0}
+.dashboard-deadlines-panel .dashboard-list{max-height:720px;overflow:auto}
+.deadline-card-v7{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line2);background:transparent;color:var(--text);padding:12px 13px}
+.deadline-card-v7:last-child{border-bottom:0}
+.deadline-card-v7:hover{background:#11161c}
+.deadline-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.deadline-card-v7 .deadline-status{text-align:right;font-size:8.5px}
+.deadline-reason{font-size:11px;font-weight:600;margin-bottom:4px}
+.deadline-card-v7 .deadline-client{font-size:10.5px;font-weight:500;color:var(--dim)}
+.deadline-card-v7 .deadline-practice{font-size:9.5px;color:var(--faint);margin-top:2px}
+
+.position-input{width:38px!important;height:25px;padding:3px 4px!important;text-align:center;background:var(--panel2)!important;border:1px solid var(--line)!important;font:600 10px 'IBM Plex Mono',monospace!important;color:var(--text)!important}
+.position-input::-webkit-inner-spin-button,.position-input::-webkit-outer-spin-button{opacity:.45}
+
+.details-panel{padding-left:108px}
+.detail-close-btn{left:8px!important;right:auto!important;top:12px!important;width:88px!important;height:54px!important;padding:5px 6px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.detail-close-arrow{font-size:18px;line-height:1}
+.detail-close-label{font:600 8px 'IBM Plex Mono',monospace;text-transform:uppercase;color:var(--faint)}
+.detail-close-btn:hover .detail-close-label{color:var(--text)}
+
+.deadlines-editor-box{min-width:0}
+.presented-row{margin-bottom:8px}
+.duration-row{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;margin-bottom:9px}
+.deadline-editor-list{border-top:1px solid var(--line2);margin-top:8px}
+.deadline-editor-row{display:grid;grid-template-columns:130px 1fr 28px;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line2)}
+.deadline-editor-row input{background:var(--panel2)!important;border-color:#20262e!important}
+.deadline-editor-empty{padding:12px 4px;color:var(--faint);font-size:10px}
+.add-deadline-btn{margin-top:9px;width:100%}
+
+.manager-deadlines-block{padding:12px 14px;border-bottom:1px solid var(--line)}
+.manager-deadlines-block>.manager-section-title{margin-bottom:7px}
+.manager-deadline-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line2)}
+.manager-deadline-row:last-child{border-bottom:0}
+.manager-deadline-reason{font-size:10.5px;font-weight:600}
+.manager-deadline-date{font:500 9px 'IBM Plex Mono',monospace;color:var(--faint);margin-top:3px}
+.manager-deadlines-empty{font-size:10px;color:var(--faint)}
+
+.working-title{margin-top:18px!important}
+.working-checklists{border:1px solid var(--line2);border-radius:6px;overflow:hidden}
+.working-check-row{display:grid;grid-template-columns:20px minmax(0,1fr) 126px;gap:8px;align-items:center;padding:9px 9px;border-bottom:1px solid var(--line2)}
+.working-check-row:last-child{border-bottom:0}
+.working-complete-check{appearance:none;width:17px;height:17px;border:1px solid #454e59;border-radius:4px;background:#090d11;cursor:pointer;position:relative}
+.working-complete-check:checked{border-color:var(--green);background:var(--greenSoft)}
+.working-complete-check:checked::after{content:'✓';position:absolute;left:2px;top:-2px;font-size:13px;font-weight:700;color:#85be93}
+.working-check-name{display:block;border:0;background:transparent;color:var(--text);padding:0;text-align:left;font-size:10.5px;font-weight:600}
+.working-check-name:hover{text-decoration:underline}
+.working-check-progress{font:500 8.5px 'IBM Plex Mono',monospace;color:var(--faint);margin-top:3px}
+.working-date{background:var(--panel2)!important;border-color:#20262e!important;padding:5px 6px!important;font-size:9px!important}
+.working-empty{padding:14px;color:var(--faint);font-size:10px}
+.history-title{margin-top:18px!important}
+.history-date-input{width:126px!important;background:var(--panel2)!important;border-color:#20262e!important;padding:5px 6px!important;font-size:9px!important}
+
+@media(max-width:1100px){
+  .dashboard-grid-v7{grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr)}
+  .details-panel{padding-left:12px;padding-top:78px}
+  .detail-close-btn{left:12px!important;top:12px!important}
+}
+@media(max-width:760px){
+  .dashboard-grid-v7{grid-template-columns:1fr}
+  .dashboard-deadlines-panel .dashboard-list{max-height:none}
+  .dashboard-grid-v7 .panel+.panel{margin-top:0}
+  .deadline-editor-row{grid-template-columns:1fr 28px}
+  .deadline-editor-row input[type=date]{grid-column:1}
+  .deadline-editor-row input[type=text]{grid-column:1}
+  .deadline-editor-row .del-btn{grid-column:2;grid-row:1 / span 2}
+  .duration-row{grid-template-columns:1fr}
+  .working-check-row{grid-template-columns:20px 1fr}
+  .working-date{grid-column:2}
+}

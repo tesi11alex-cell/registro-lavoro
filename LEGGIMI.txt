@@ -1,24 +1,24 @@
-GESTIONALE REGISTRO LAVORO V6
+GESTIONALE REGISTRO LAVORO V7
 
-SOSTITUISCI nel repository:
+SOSTITUISCI SU GITHUB:
 - index.html
 - gestionale-v4.css
 - gestionale-v4.js
-- auth-v4.js
 - sw.js
 
-NOVITÀ:
-- Pulsante Crea checklist in alto.
-- Modelli checklist riutilizzabili e sincronizzati con Firebase.
-- Più checklist nella stessa pratica.
-- In Gestione pratica selezioni la checklist dal menu.
-- Nessuna data sulle singole voci checklist.
-- Quando tutte le voci sono spuntate compare Conferma invio.
-- Conferma invio: data invio, protocollo, data protocollo, nota.
-- Dopo la conferma l'evento entra in Storia pratica.
-- Protocollo e data possono essere aggiornati anche dopo l'invio.
-- Checklist inviata rimane consultabile e bloccata; può essere riaperta esplicitamente.
-- Le vecchie checklist V5 vengono migrate automaticamente in una checklist chiamata Checklist pratica.
+NON serve sostituire auth-v4.js rispetto alla V6.
 
-IMPORTANTE:
-Questa versione richiede anche la sostituzione di auth-v4.js perché deve sincronizzare il nuovo archivio checklist-templates-data.
+NOVITÀ V7
+- Registro pratiche: nella colonna N. puoi digitare direttamente la posizione desiderata.
+  Esempio: scrivi 2 e la pratica viene inserita al secondo posto; quella che era 2 scende a 3.
+  Restano anche le frecce su/giù.
+- Dettaglio pratica: il pulsante per richiudere è più grande, a sinistra, con testo “Rimpicciolisci”.
+- Dashboard: Pratiche attive occupano 2/3; Prossime scadenze 1/3.
+- Ogni pratica può avere più scadenze, ciascuna con data e motivo.
+- La vecchia scadenza viene convertita automaticamente in “Scadenza principale”.
+- Tutte le scadenze compaiono in Dashboard, pagina Scadenze e Gestione pratica.
+- Gestione pratica: tra Note e Storia compare “Checklist in lavorazione”.
+- Ogni checklist in lavorazione ha flag + data modificabile.
+- Flag della checklist -> la checklist entra nella Storia pratica con quella data.
+- La data dell’evento checklist resta modificabile direttamente nella Storia pratica.
+- Protocollo/data protocollo restano disponibili nella checklist inviata.
