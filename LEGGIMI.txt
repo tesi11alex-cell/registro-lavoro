@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V16
+GESTIONALE REGISTRO LAVORO V17
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,30 +8,31 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-GESTIONE PRATICA
-Colonna sinistra:
-- Cliente / Società
-- Oggetto
-- Comune
-- Via
-- Priorità
-- Pagamento
-- Note pratica
-- Info catastali: Foglio / Mappale / Sub.
-- Fase lavoro
+GESTIONE PRATICA V17
+Impostata seguendo il tuo schizzo:
 
-La Fase lavoro è una sola riga e continua a essere quella mostrata nella Dashboard.
-Eliminata la vecchia riga Fase lavoro + protocollo.
+- COLONNA SINISTRA stretta:
+  Cliente / Società
+  Oggetto
+  Comune
+  Via
+  Priorità
+  Pagamento
+  Info catastali (Foglio / Mappale / Sub.)
+  Fase lavoro
+  + sotto Termini pratica
 
-Sotto i dati ci sono due flag:
-- Checklist
-- Stato pratica e Cronologia
+- COLONNA CENTRALE:
+  Checklist
 
-I flag funzionano come selettori:
-- Checklist apre a destra solo il pannello Checklist.
-- Stato pratica e Cronologia apre a destra:
-  - + Stato pratica
-  - informazioni della pratica
-  - cronologia/storia completa della pratica.
+- COLONNA DESTRA:
+  Stato pratica e Cronologia
 
-Termini pratica restano in fondo alla colonna sinistra con il pulsante Modifica.
+- SOTTO a centro+destra:
+  Note pratica
+
+Rispetto alla V16:
+- tolti i due flag laterali;
+- Checklist e Stato pratica ora si vedono insieme;
+- Note pratica spostate sotto, come fascia separata;
+- la colonna dati a sinistra resta più stretta.

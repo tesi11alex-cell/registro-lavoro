@@ -462,40 +462,28 @@ function renderTermsSummary(p){
 }
 
 function renderPracticeHero(p){
-  return `<div class="practice-sidebar-v16">
+  return `<div class="practice-sidebar-v17">
+    <div class="sidebar-title-v17">Pratica</div>
     <label><span>Cliente / Società</span><input id="manager-client" type="text" value="${esc(p.cliente)}" placeholder="Cliente / società"></label>
     <label><span>Oggetto</span><input id="manager-object" type="text" value="${esc(p.pratica)}" placeholder="Oggetto pratica"></label>
     <label><span>Comune</span><input id="manager-comune" type="text" value="${esc(p.comune)}" placeholder="Comune"></label>
     <label><span>Via</span><input id="manager-via" type="text" value="${esc(p.via)}" placeholder="Via / indirizzo"></label>
 
-    <div class="sidebar-two-v16">
+    <div class="sidebar-two-v17">
       <label><span>Priorità</span><select id="manager-priority" class="priority-select"><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option></select></label>
       <label><span>Pagamento</span><select id="manager-payment" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></label>
     </div>
 
-    <label><span>Note pratica</span><textarea id="manager-notes" class="sidebar-notes-v16" placeholder="Note della pratica...">${esc(p.note)}</textarea></label>
-
-    <div class="sidebar-catasto-v16">
-      <div class="sidebar-section-label-v16">Info catastali</div>
-      <div class="sidebar-three-v16">
+    <div class="sidebar-catasto-v17">
+      <div class="sidebar-section-label-v17">Info catastali</div>
+      <div class="sidebar-three-v17">
         <label><span>Foglio</span><input id="manager-foglio" type="text" value="${esc(p.foglio||'')}" placeholder="Foglio"></label>
         <label><span>Mappale</span><input id="manager-mappale" type="text" value="${esc(p.mappale||'')}" placeholder="Mappale"></label>
         <label><span>Sub.</span><input id="manager-subalterno" type="text" value="${esc(p.subalterno||'')}" placeholder="Sub."></label>
       </div>
     </div>
 
-    <label class="sidebar-phase-v16"><span>Fase lavoro</span><input id="manager-phase" type="text" value="${esc(p.faseLavoro||'')}" placeholder="Questa riga compare anche in Dashboard"></label>
-
-    <div class="sidebar-flags-v16">
-      <label class="sidebar-flag-v16 ${managerRightPanel==='checklist'?'active':''}">
-        <input type="checkbox" id="flag-checklist-v16" ${managerRightPanel==='checklist'?'checked':''}>
-        <span>Checklist</span>
-      </label>
-      <label class="sidebar-flag-v16 ${managerRightPanel==='status'?'active':''}">
-        <input type="checkbox" id="flag-status-v16" ${managerRightPanel==='status'?'checked':''}>
-        <span>Stato pratica e Cronologia</span>
-      </label>
-    </div>
+    <label class="sidebar-phase-v17"><span>Fase lavoro</span><input id="manager-phase" type="text" value="${esc(p.faseLavoro||'')}" placeholder="Questa riga compare anche in Dashboard"></label>
   </div>`;
 }
 
@@ -506,56 +494,14 @@ function renderManager(){
   ensureManagerChecklist();
   const c=currentChecklist();
 
-  const rightPanel=managerRightPanel==='status'?`
-    <section class="manager-card-v12 status-history-card-v16">
-      <div class="manager-card-head-v12">
-        <div>
-          <div class="manager-card-kicker-v12">Gestione</div>
-          <div class="manager-card-title-v12">Aggiungi stato pratica e Cronologia</div>
-        </div>
-        <button class="btn" id="manager-add-info" type="button">+ Stato pratica</button>
-      </div>
-      <div class="manager-card-body-v12">
-        <div id="practice-info-rows-v14">${renderPracticeInfoRows(p)}</div>
-      </div>
-
-      <div class="status-history-separator-v16"></div>
-
-      <div class="manager-card-head-v12 compact-history-head-v16">
-        <div>
-          <div class="manager-card-kicker-v12">Storico</div>
-          <div class="manager-card-title-v12">Cronologia pratica</div>
-        </div>
-      </div>
-      <div class="manager-card-body-v12 history-body-v12">
-        <div class="timeline timeline-v10">${renderHistory(p)}</div>
-      </div>
-    </section>`:`
-    <section class="manager-card-v12 checklist-card-v12 checklist-panel-v16">
-      <div class="manager-card-head-v12 checklist-card-head-v12">
-        ${renderChecklistHeaderSelect(p)}
-      </div>
-      <div class="manager-card-body-v12 checklist-body-v12">
-        ${c?renderChecklistPanel(c):`
-          <div class="simple-no-checklist-v11">
-            <div class="simple-no-checklist-icon-v11">✓</div>
-            <div class="simple-no-checklist-title-v11">Nessuna checklist selezionata</div>
-            <div class="simple-no-checklist-text-v11">Scegli una checklist dal menu oppure aggiungine una preimpostata qui sotto.</div>
-          </div>`}
-      </div>
-      <div class="manager-card-footer-v12">
-        ${renderChecklistFooter(p)}
-      </div>
-    </section>`;
-
   body.innerHTML=`
-    <div class="manager-workspace-v16">
-      <aside class="manager-left-v16">
-        <section class="manager-card-v12 sidebar-card-v16">
+    <div class="manager-board-v17">
+      <aside class="manager-col-left-v17">
+        <section class="manager-card-v12 sidebar-card-v17">
           ${renderPracticeHero(p)}
         </section>
 
-        <section class="manager-card-v12 terms-card-v14 terms-sidebar-v16">
+        <section class="manager-card-v12 terms-card-v14 terms-sidebar-v17">
           <div class="manager-card-head-v12 terms-card-head-v14">
             <div>
               <div class="manager-card-kicker-v12">Promemoria tecnico</div>
@@ -573,9 +519,61 @@ function renderManager(){
         </section>
       </aside>
 
-      <main class="manager-right-v16">
-        ${rightPanel}
-      </main>
+      <section class="manager-card-v12 manager-col-center-v17 checklist-card-v17">
+        <div class="manager-card-head-v12 checklist-card-head-v12">
+          <div>
+            <div class="manager-card-kicker-v12">Operativo</div>
+            <div class="manager-card-title-v12">Checklist</div>
+          </div>
+          <div class="checklist-head-controls-v17">${renderChecklistHeaderSelect(p)}</div>
+        </div>
+        <div class="manager-card-body-v12 checklist-body-v17">
+          ${c?renderChecklistPanel(c):`
+            <div class="simple-no-checklist-v11">
+              <div class="simple-no-checklist-icon-v11">✓</div>
+              <div class="simple-no-checklist-title-v11">Nessuna checklist selezionata</div>
+              <div class="simple-no-checklist-text-v11">Scegli una checklist dal menu oppure aggiungine una preimpostata qui sotto.</div>
+            </div>`}
+        </div>
+        <div class="manager-card-footer-v12">
+          ${renderChecklistFooter(p)}
+        </div>
+      </section>
+
+      <section class="manager-card-v12 manager-col-right-v17 status-card-v17">
+        <div class="manager-card-head-v12">
+          <div>
+            <div class="manager-card-kicker-v12">Gestione</div>
+            <div class="manager-card-title-v12">Stato pratica e Cronologia</div>
+          </div>
+          <button class="btn" id="manager-add-info" type="button">+ Stato pratica</button>
+        </div>
+        <div class="manager-card-body-v12 status-body-v17">
+          <div id="practice-info-rows-v14">${renderPracticeInfoRows(p)}</div>
+        </div>
+        <div class="status-history-separator-v17"></div>
+        <div class="manager-card-head-v12 compact-history-head-v17">
+          <div>
+            <div class="manager-card-kicker-v12">Storico</div>
+            <div class="manager-card-title-v12">Cronologia pratica</div>
+          </div>
+        </div>
+        <div class="manager-card-body-v12 history-body-v17">
+          <div class="timeline timeline-v10">${renderHistory(p)}</div>
+        </div>
+      </section>
+
+      <section class="manager-card-v12 manager-bottom-notes-v17">
+        <div class="manager-card-head-v12">
+          <div>
+            <div class="manager-card-kicker-v12">Appunti</div>
+            <div class="manager-card-title-v12">Note pratica</div>
+          </div>
+        </div>
+        <div class="manager-card-body-v12">
+          <textarea id="manager-notes" class="board-notes-v17" placeholder="Scrivi qui note, richieste, contatti, promemoria...">${esc(p.note)}</textarea>
+        </div>
+      </section>
     </div>`;
 
   bindManager(p,c);
