@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V15
+GESTIONALE REGISTRO LAVORO V16
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,36 +8,30 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-V15
-- Primo riquadro Gestione pratica molto più compatto.
-- Contiene:
-  Cliente / Società
-  Oggetto
-  Comune
-  Via
-  Priorità
-  Pagamento
-  Note pratica
-  Info catastali: Foglio, Mappale, Sub.
-  Fase lavoro
-- Sulla riga della fase:
-  Oggetto protocollo
-  Prot. n.
-  Data
-  Aggiungi
-- “Aggiungi” crea una nuova Informazione pratica di tipo Protocollo.
+GESTIONE PRATICA
+Colonna sinistra:
+- Cliente / Società
+- Oggetto
+- Comune
+- Via
+- Priorità
+- Pagamento
+- Note pratica
+- Info catastali: Foglio / Mappale / Sub.
+- Fase lavoro
 
-INFORMAZIONI PRATICA
-- Ogni informazione ha il pulsante “Invia a stato pratica”.
-- Quando viene inviata resta registrata e compare anche in Storia pratica.
-- Puoi continuare ad aggiungere altre informazioni con + Informazione.
+La Fase lavoro è una sola riga e continua a essere quella mostrata nella Dashboard.
+Eliminata la vecchia riga Fase lavoro + protocollo.
 
-TERMINI PRATICA
-- Rimangono in fondo.
-- Di default mostrano solo il riepilogo.
-- Pulsante “Modifica” apre i termini manuali e permette di aggiungerne o modificarne.
-- Pulsante diventa “Chiudi” quando l'editor è aperto.
+Sotto i dati ci sono due flag:
+- Checklist
+- Stato pratica e Cronologia
 
-NOTE PRATICA
-- Tolte dal vecchio riquadro separato.
-- Ora sono dentro il primo riquadro, come richiesto.
+I flag funzionano come selettori:
+- Checklist apre a destra solo il pannello Checklist.
+- Stato pratica e Cronologia apre a destra:
+  - + Stato pratica
+  - informazioni della pratica
+  - cronologia/storia completa della pratica.
+
+Termini pratica restano in fondo alla colonna sinistra con il pulsante Modifica.

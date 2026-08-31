@@ -1,7 +1,7 @@
 (function(){'use strict';
 const S=window.storage;
 let pratiche=[],candidature=[],templates=[];
-let openPracticeId=null,managerPracticeId='',managerChecklistId='',editingTemplateId='';
+let openPracticeId=null,managerPracticeId='',managerChecklistId='',editingTemplateId='',managerRightPanel='checklist';
 const $=id=>document.getElementById(id);
 const tbodyP=$('tbody-pratiche'),tbodyPA=$('tbody-pratiche-archiviate'),tbodyC=$('tbody-candidature'),tbodyCA=$('tbody-candidature-archiviate'),statusP=$('status-pratiche'),statusPA=$('status-pratiche-archiviate'),statusC=$('status-candidature'),statusCA=$('status-candidature-archiviate');
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -91,7 +91,7 @@ function remainingText(date){
 }
 
 function sortedDeadlines(){const out=[];pratiche.filter(p=>!p.fatta).forEach(p=>practiceTerms(p).forEach(d=>out.push({practice:p,deadline:d,date:d.date,reason:d.reason||'Termine pratica'})));return out.sort((a,b)=>a.date.localeCompare(b.date))}
-function openManager(id){managerPracticeId=id;const p=pratiche.find(x=>x.id===id&&!x.fatta);managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';renderManager();goTo('gestione')}
+function openManager(id){managerPracticeId=id;managerRightPanel='checklist';const p=pratiche.find(x=>x.id===id&&!x.fatta);managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';renderManager();goTo('gestione')}
 function openPracticeContext(id){const p=pratiche.find(x=>x.id===id);if(!p)return;if(p.fatta){goTo('archivio');setOpenPractice(id)}else openManager(id)}
 function renderDashboardPractices(){
   const host=$('dashboard-practices'),active=pratiche.filter(p=>!p.fatta);
@@ -462,39 +462,42 @@ function renderTermsSummary(p){
 }
 
 function renderPracticeHero(p){
-  return `<div class="compact-practice-v15">
-    <div class="compact-practice-grid-v15">
-      <label><span>Cliente / Società</span><input id="manager-client" type="text" value="${esc(p.cliente)}" placeholder="Cliente / società"></label>
-      <label class="compact-object-v15"><span>Oggetto</span><input id="manager-object" type="text" value="${esc(p.pratica)}" placeholder="Oggetto pratica"></label>
-      <label><span>Comune</span><input id="manager-comune" type="text" value="${esc(p.comune)}" placeholder="Comune"></label>
-      <label><span>Via</span><input id="manager-via" type="text" value="${esc(p.via)}" placeholder="Via / indirizzo"></label>
+  return `<div class="practice-sidebar-v16">
+    <label><span>Cliente / Società</span><input id="manager-client" type="text" value="${esc(p.cliente)}" placeholder="Cliente / società"></label>
+    <label><span>Oggetto</span><input id="manager-object" type="text" value="${esc(p.pratica)}" placeholder="Oggetto pratica"></label>
+    <label><span>Comune</span><input id="manager-comune" type="text" value="${esc(p.comune)}" placeholder="Comune"></label>
+    <label><span>Via</span><input id="manager-via" type="text" value="${esc(p.via)}" placeholder="Via / indirizzo"></label>
+
+    <div class="sidebar-two-v16">
       <label><span>Priorità</span><select id="manager-priority" class="priority-select"><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option></select></label>
       <label><span>Pagamento</span><select id="manager-payment" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></label>
     </div>
 
-    <div class="compact-practice-lower-v15">
-      <label class="compact-note-v15"><span>Note pratica</span><textarea id="manager-notes" placeholder="Note della pratica...">${esc(p.note)}</textarea></label>
+    <label><span>Note pratica</span><textarea id="manager-notes" class="sidebar-notes-v16" placeholder="Note della pratica...">${esc(p.note)}</textarea></label>
 
-      <div class="compact-catasto-v15">
-        <div class="compact-section-label-v15">Info catastali</div>
-        <div class="catasto-grid-v15">
-          <label><span>Foglio</span><input id="manager-foglio" type="text" value="${esc(p.foglio||'')}" placeholder="Foglio"></label>
-          <label><span>Mappale</span><input id="manager-mappale" type="text" value="${esc(p.mappale||'')}" placeholder="Mappale"></label>
-          <label><span>Sub.</span><input id="manager-subalterno" type="text" value="${esc(p.subalterno||'')}" placeholder="Sub."></label>
-        </div>
+    <div class="sidebar-catasto-v16">
+      <div class="sidebar-section-label-v16">Info catastali</div>
+      <div class="sidebar-three-v16">
+        <label><span>Foglio</span><input id="manager-foglio" type="text" value="${esc(p.foglio||'')}" placeholder="Foglio"></label>
+        <label><span>Mappale</span><input id="manager-mappale" type="text" value="${esc(p.mappale||'')}" placeholder="Mappale"></label>
+        <label><span>Sub.</span><input id="manager-subalterno" type="text" value="${esc(p.subalterno||'')}" placeholder="Sub."></label>
       </div>
     </div>
 
-    <div class="phase-protocol-v15">
-      <label class="phase-field-v15"><span>Fase lavoro</span><input id="manager-phase" type="text" value="${esc(p.faseLavoro||'')}" placeholder="Es. attesa nulla osta / integrazione / da protocollare"></label>
-      <label><span>Oggetto protocollo</span><input id="quick-protocol-object" type="text" value="${esc(p.quickProtocolObject||'')}" placeholder="Oggetto"></label>
-      <label><span>Prot. n.</span><input id="quick-protocol-number" type="text" value="${esc(p.quickProtocolNumber||'')}" placeholder="Numero"></label>
-      <label><span>Data</span><input id="quick-protocol-date" type="date" value="${esc(p.quickProtocolDate||'')}"></label>
-      <button class="btn gold quick-protocol-add-v15" id="quick-protocol-add" type="button">Aggiungi</button>
+    <label class="sidebar-phase-v16"><span>Fase lavoro</span><input id="manager-phase" type="text" value="${esc(p.faseLavoro||'')}" placeholder="Questa riga compare anche in Dashboard"></label>
+
+    <div class="sidebar-flags-v16">
+      <label class="sidebar-flag-v16 ${managerRightPanel==='checklist'?'active':''}">
+        <input type="checkbox" id="flag-checklist-v16" ${managerRightPanel==='checklist'?'checked':''}>
+        <span>Checklist</span>
+      </label>
+      <label class="sidebar-flag-v16 ${managerRightPanel==='status'?'active':''}">
+        <input type="checkbox" id="flag-status-v16" ${managerRightPanel==='status'?'checked':''}>
+        <span>Stato pratica e Cronologia</span>
+      </label>
     </div>
   </div>`;
 }
-
 
 function renderManager(){
   renderManagerPracticeSelect();
@@ -503,25 +506,32 @@ function renderManager(){
   ensureManagerChecklist();
   const c=currentChecklist();
 
-  body.innerHTML=`
-    <section class="manager-card-v12 practice-info-card-v12">
-      ${renderPracticeHero(p)}
-    </section>
-
-    <section class="manager-card-v12 structured-info-card-v14">
+  const rightPanel=managerRightPanel==='status'?`
+    <section class="manager-card-v12 status-history-card-v16">
       <div class="manager-card-head-v12">
         <div>
-          <div class="manager-card-kicker-v12">Dati pratica</div>
-          <div class="manager-card-title-v12">Informazioni pratica</div>
+          <div class="manager-card-kicker-v12">Gestione</div>
+          <div class="manager-card-title-v12">Aggiungi stato pratica e Cronologia</div>
         </div>
-        <button class="btn" id="manager-add-info" type="button">+ Informazione</button>
+        <button class="btn" id="manager-add-info" type="button">+ Stato pratica</button>
       </div>
       <div class="manager-card-body-v12">
         <div id="practice-info-rows-v14">${renderPracticeInfoRows(p)}</div>
       </div>
-    </section>
 
-    <section class="manager-card-v12 checklist-card-v12 checklist-full-v15">
+      <div class="status-history-separator-v16"></div>
+
+      <div class="manager-card-head-v12 compact-history-head-v16">
+        <div>
+          <div class="manager-card-kicker-v12">Storico</div>
+          <div class="manager-card-title-v12">Cronologia pratica</div>
+        </div>
+      </div>
+      <div class="manager-card-body-v12 history-body-v12">
+        <div class="timeline timeline-v10">${renderHistory(p)}</div>
+      </div>
+    </section>`:`
+    <section class="manager-card-v12 checklist-card-v12 checklist-panel-v16">
       <div class="manager-card-head-v12 checklist-card-head-v12">
         ${renderChecklistHeaderSelect(p)}
       </div>
@@ -536,42 +546,53 @@ function renderManager(){
       <div class="manager-card-footer-v12">
         ${renderChecklistFooter(p)}
       </div>
-    </section>
-
-    <section class="manager-card-v12 history-card-v12">
-      <div class="manager-card-head-v12">
-        <div>
-          <div class="manager-card-kicker-v12">Cronologia</div>
-          <div class="manager-card-title-v12">Storia pratica</div>
-        </div>
-      </div>
-      <div class="manager-card-body-v12 history-body-v12">
-        <div class="timeline timeline-v10">${renderHistory(p)}</div>
-      </div>
-    </section>
-
-    <section class="manager-card-v12 terms-card-v14">
-      <div class="manager-card-head-v12 terms-card-head-v14">
-        <div>
-          <div class="manager-card-kicker-v12">Promemoria tecnico</div>
-          <div class="manager-card-title-v12">Termini pratica</div>
-        </div>
-        <button class="btn subtle-v14" id="toggle-terms-edit" type="button">Modifica</button>
-      </div>
-      <div class="manager-card-body-v12">
-        ${renderTermsSummary(p)}
-        <div class="manual-terms-editor-v14 terms-editor-hidden-v15" id="terms-editor-v15">
-          <div class="terms-edit-head-v15"><button class="btn" id="manager-add-deadline" type="button">+ Termine manuale</button></div>
-          ${renderManagerDeadlinesEditor(p)}
-        </div>
-      </div>
     </section>`;
+
+  body.innerHTML=`
+    <div class="manager-workspace-v16">
+      <aside class="manager-left-v16">
+        <section class="manager-card-v12 sidebar-card-v16">
+          ${renderPracticeHero(p)}
+        </section>
+
+        <section class="manager-card-v12 terms-card-v14 terms-sidebar-v16">
+          <div class="manager-card-head-v12 terms-card-head-v14">
+            <div>
+              <div class="manager-card-kicker-v12">Promemoria tecnico</div>
+              <div class="manager-card-title-v12">Termini pratica</div>
+            </div>
+            <button class="btn subtle-v14" id="toggle-terms-edit" type="button">Modifica</button>
+          </div>
+          <div class="manager-card-body-v12">
+            ${renderTermsSummary(p)}
+            <div class="manual-terms-editor-v14 terms-editor-hidden-v15" id="terms-editor-v15">
+              <div class="terms-edit-head-v15"><button class="btn" id="manager-add-deadline" type="button">+ Termine manuale</button></div>
+              ${renderManagerDeadlinesEditor(p)}
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="manager-right-v16">
+        ${rightPanel}
+      </main>
+    </div>`;
 
   bindManager(p,c);
 }
 function completeWorkingChecklist(p,c){const allDone=c.items.length===0||c.items.every(i=>i.done);if(!allDone&&!confirm(`La checklist “${c.name}” ha ancora voci non completate. Vuoi comunque spostarla nella storia pratica?`))return;c.sent=true;c.sentAt=c.workDate||todayISO();syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP||null);renderManager()}
 
 function bindManager(p,c){
+  const flagChecklist=$('flag-checklist-v16'),flagStatus=$('flag-status-v16');
+  if(flagChecklist)flagChecklist.addEventListener('change',()=>{
+    if(flagChecklist.checked){managerRightPanel='checklist';renderManager()}
+    else flagChecklist.checked=true;
+  });
+  if(flagStatus)flagStatus.addEventListener('change',()=>{
+    if(flagStatus.checked){managerRightPanel='status';renderManager()}
+    else flagStatus.checked=true;
+  });
+
   const bindText=(id,key,after)=>{const el=$(id);if(!el)return;el.addEventListener('input',()=>{p[key]=el.value;if(after)after()});el.addEventListener('change',()=>save('pratiche-data',pratiche,statusP||null))};
   bindText('manager-client','cliente',()=>{renderDashboard()});
   bindText('manager-object','pratica',()=>{renderDashboard()});
@@ -586,18 +607,6 @@ function bindManager(p,c){
   const pay=$('manager-payment');if(pay){pay.addEventListener('change',()=>{p.statoPagamento=pay.value;pay.className='pay-select '+payClass(p.statoPagamento);save('pratiche-data',pratiche,statusP||null);renderDashboard()})}
 
   const notes=$('manager-notes');if(notes){notes.addEventListener('input',()=>p.note=notes.value);notes.addEventListener('change',()=>save('pratiche-data',pratiche,statusP||null))}
-
-  const qpObj=$('quick-protocol-object'),qpNum=$('quick-protocol-number'),qpDate=$('quick-protocol-date');
-  if(qpObj)qpObj.addEventListener('input',()=>p.quickProtocolObject=qpObj.value);
-  if(qpNum)qpNum.addEventListener('input',()=>p.quickProtocolNumber=qpNum.value);
-  if(qpDate)qpDate.addEventListener('change',()=>p.quickProtocolDate=qpDate.value);
-  const qpAdd=$('quick-protocol-add');if(qpAdd)qpAdd.addEventListener('click',()=>{
-    const object=(qpObj?.value||'').trim(),protocol=(qpNum?.value||'').trim(),date=qpDate?.value||'';
-    if(!object&&!protocol&&!date){alert('Inserisci almeno oggetto, protocollo o data.');return}
-    p.infoRows.push({id:uid(),kind:'Protocollo',object,practiceType:'',date,protocol,termType:'',expiryDate:'',sentToStatus:false,sentAt:''});
-    p.quickProtocolObject='';p.quickProtocolNumber='';p.quickProtocolDate='';
-    save('pratiche-data',pratiche,statusP||null);renderManager();
-  });
 
   document.querySelectorAll('[data-info-send]').forEach(btn=>btn.addEventListener('click',()=>{
     const r=p.infoRows.find(x=>x.id===btn.dataset.infoSend);if(!r)return;
@@ -721,7 +730,7 @@ function bindManager(p,c){
 }
 
 $('practice-manager-select').addEventListener('change',e=>{
-  managerPracticeId=e.target.value;
+  managerPracticeId=e.target.value;managerRightPanel='checklist';
   const p=currentPractice();
   managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';
   renderManager();
