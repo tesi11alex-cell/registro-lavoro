@@ -29,7 +29,6 @@
 <button class="nav-btn active" data-nav="dashboard" type="button"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg><span>Dashboard</span></button>
 <button class="nav-btn" data-nav="gestione" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9l2 2 4-4M8 15h8"/></svg><span>Gestione pratica</span></button>
 <button class="nav-btn" data-nav="crea-checklist" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9l2 2 4-4M8 15h5M16 13v6M13 16h6"/></svg><span>Crea checklist</span></button>
-<button class="nav-btn" data-nav="scadenze" type="button"><svg viewBox="0 0 24 24"><path d="M5 5h14v15H5zM8 3v4M16 3v4M5 9h14"/><path d="M9 13h2M13 13h2M9 16h2"/></svg><span>Scadenze</span></button>
 <button class="nav-btn" data-nav="clienti" type="button"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M16 7h5M18.5 4.5v5"/></svg><span>Clienti</span></button>
 <button class="nav-btn" data-nav="archivio" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3zM9 11h6"/></svg><span>Archivio</span></button>
 <button class="nav-btn" data-nav="candidature" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM9 7V4h6v3M4 12h16"/></svg><span>Candidature</span></button>
@@ -81,8 +80,6 @@
 </div></div>
 <div class="panel"><div class="panel-head"><h2>Checklist disponibili</h2><span class="small-note" id="template-count">—</span></div><div id="template-list" class="template-list"></div></div>
 </div></section>
-
-<section class="view" data-view="scadenze"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Termini pratiche</h2><span class="small-note">Termini utili per chiusura e validità delle pratiche</span></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:13%">Data</th><th style="width:22%">Motivo</th><th style="width:19%">Cliente</th><th style="width:20%">Pratica</th><th style="width:17%">Comune / Via</th><th style="width:9%">Stato</th></tr></thead><tbody id="tbody-scadenze"></tbody></table></div></div></section>
 
 <section class="view" data-view="clienti"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Clienti</h2><span class="small-note" id="clienti-count">—</span></div><div class="filter-bar"><label class="search-box"><span class="field-label">Cerca cliente</span><input id="client-search" type="text" placeholder="Nome cliente..."></label><label class="filter-box"><span class="field-label">Filtro</span><select id="client-filter"><option value="all">Tutti</option><option value="active">Con pratiche attive</option><option value="archived">Solo archivio</option></select></label></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:30%">Cliente</th><th style="width:14%">Pratiche attive</th><th style="width:14%">Archiviate</th><th style="width:32%">Ultimo indirizzo</th><th style="width:10%"></th></tr></thead><tbody id="tbody-clienti"></tbody></table></div></div></section>
 

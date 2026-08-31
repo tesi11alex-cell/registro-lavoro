@@ -242,7 +242,7 @@ function openDashboardPracticeCreator(){
 
 function renderDashboard(){renderDashboardPractices()}
 $('dashboard-add-practice').addEventListener('click',openDashboardPracticeCreator);
-function renderScadenze(){const tb=$('tbody-scadenze'),list=sortedDeadlines();if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="6">Nessuna scadenza inserita.</td></tr>';return}tb.innerHTML=list.map(x=>{const p=x.practice,s=deadlineStatusDate(x.date);return`<tr class="link-row" data-open-practice="${p.id}"><td class="mono">${formatDate(x.date)}</td><td>${esc(x.reason)}</td><td><strong>${esc(p.cliente||'—')}</strong></td><td>${esc(p.pratica||'—')}</td><td class="muted">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</td><td><span class="deadline-status ${s.cls}">${s.label}</span></td></tr>`}).join('');tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)))}
+function renderScadenze(){const tb=$('tbody-scadenze');if(!tb)return;const list=sortedDeadlines();if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="6">Nessuna scadenza inserita.</td></tr>';return}tb.innerHTML=list.map(x=>{const p=x.practice,s=deadlineStatusDate(x.date);return`<tr class="link-row" data-open-practice="${p.id}"><td class="mono">${formatDate(x.date)}</td><td>${esc(x.reason)}</td><td><strong>${esc(p.cliente||'—')}</strong></td><td>${esc(p.pratica||'—')}</td><td class="muted">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</td><td><span class="deadline-status ${s.cls}">${s.label}</span></td></tr>`}).join('');tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)))}
 function getClientList(){const map=new Map();pratiche.forEach(p=>{const name=(p.cliente||'').trim();if(!name)return;const key=name.toLocaleLowerCase('it');if(!map.has(key))map.set(key,{name,active:0,arch:0,last:null});const c=map.get(key);p.fatta?c.arch++:c.active++;c.last=p});return[...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'))}
 function renderClienti(){const q=($('client-search').value||'').trim().toLocaleLowerCase('it'),filter=$('client-filter').value;let list=getClientList();if(q)list=list.filter(c=>c.name.toLocaleLowerCase('it').includes(q));if(filter==='active')list=list.filter(c=>c.active>0);if(filter==='archived')list=list.filter(c=>c.active===0&&c.arch>0);$('clienti-count').textContent=list.length===1?'1 cliente':`${list.length} clienti`;const tb=$('tbody-clienti');if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessun cliente corrisponde alla ricerca.</td></tr>';return}tb.innerHTML=list.map(c=>`<tr><td><strong>${esc(c.name)}</strong></td><td class="mono">${c.active}</td><td class="mono">${c.arch}</td><td class="muted">${esc([c.last?.comune,c.last?.via].filter(Boolean).join(' · ')||'—')}</td><td><button class="btn" data-client-open="${esc(c.name)}">Apri</button></td></tr>`).join('');tb.querySelectorAll('[data-client-open]').forEach(b=>b.addEventListener('click',()=>{const p=pratiche.find(x=>x.cliente===b.dataset.clientOpen&&!x.fatta)||pratiche.find(x=>x.cliente===b.dataset.clientOpen);if(p)openPracticeContext(p.id)}))}
 $('client-search').addEventListener('input',renderClienti);$('client-filter').addEventListener('change',renderClienti);
@@ -372,15 +372,12 @@ function renderChecklistPanel(c){
     </div>
 
     ${!c.sent?`
-      <div class="simple-checklist-close-v11">
+      <div class="simple-checklist-close-v18">
         <label>
-          <span class="field-label">Data chiusura / invio</span>
+          <span class="field-label">Data invio in cronologia</span>
           <input id="current-checklist-work-date" type="date" value="${esc(c.workDate||todayISO())}">
         </label>
-        <label class="simple-close-check-v11">
-          <input id="complete-current-checklist" class="working-complete-check" type="checkbox">
-          <span>Sposta in storia</span>
-        </label>
+        <button class="btn gold send-chronology-btn-v18" id="send-current-checklist-history" type="button">Invia a cronologia</button>
       </div>`:renderProtocolBox(c)}
 
     <div class="simple-checklist-danger-v11">
@@ -495,27 +492,10 @@ function renderManager(){
   const c=currentChecklist();
 
   body.innerHTML=`
-    <div class="manager-board-v17">
+    <div class="manager-board-v17 manager-board-v18">
       <aside class="manager-col-left-v17">
         <section class="manager-card-v12 sidebar-card-v17">
           ${renderPracticeHero(p)}
-        </section>
-
-        <section class="manager-card-v12 terms-card-v14 terms-sidebar-v17">
-          <div class="manager-card-head-v12 terms-card-head-v14">
-            <div>
-              <div class="manager-card-kicker-v12">Promemoria tecnico</div>
-              <div class="manager-card-title-v12">Termini pratica</div>
-            </div>
-            <button class="btn subtle-v14" id="toggle-terms-edit" type="button">Modifica</button>
-          </div>
-          <div class="manager-card-body-v12">
-            ${renderTermsSummary(p)}
-            <div class="manual-terms-editor-v14 terms-editor-hidden-v15" id="terms-editor-v15">
-              <div class="terms-edit-head-v15"><button class="btn" id="manager-add-deadline" type="button">+ Termine manuale</button></div>
-              ${renderManagerDeadlinesEditor(p)}
-            </div>
-          </div>
         </section>
       </aside>
 
@@ -578,7 +558,7 @@ function renderManager(){
 
   bindManager(p,c);
 }
-function completeWorkingChecklist(p,c){const allDone=c.items.length===0||c.items.every(i=>i.done);if(!allDone&&!confirm(`La checklist “${c.name}” ha ancora voci non completate. Vuoi comunque spostarla nella storia pratica?`))return;c.sent=true;c.sentAt=c.workDate||todayISO();syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP||null);renderManager()}
+function completeWorkingChecklist(p,c){const allDone=c.items.length===0||c.items.every(i=>i.done);if(!allDone&&!confirm(`La checklist “${c.name}” ha ancora voci non completate. Vuoi comunque inviarla alla cronologia?`))return;c.sent=true;c.sentAt=c.workDate||todayISO();syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP||null);renderManager()}
 
 function bindManager(p,c){
   const flagChecklist=$('flag-checklist-v16'),flagStatus=$('flag-status-v16');
@@ -611,12 +591,6 @@ function bindManager(p,c){
     r.sentToStatus=true;r.sentAt=todayISO();
     save('pratiche-data',pratiche,statusP||null);renderManager();
   }));
-
-  const toggleTerms=$('toggle-terms-edit');if(toggleTerms)toggleTerms.addEventListener('click',()=>{
-    const ed=$('terms-editor-v15');if(!ed)return;
-    ed.classList.toggle('terms-editor-hidden-v15');
-    toggleTerms.textContent=ed.classList.contains('terms-editor-hidden-v15')?'Modifica':'Chiudi';
-  });
 
   const addInfo=$('manager-add-info');if(addInfo)addInfo.addEventListener('click',()=>{
     p.infoRows.push({id:uid(),kind:'Pratica presentata',object:'',practiceType:'',date:'',protocol:'',termType:'',expiryDate:'',sentToStatus:false,sentAt:''});
@@ -691,8 +665,11 @@ function bindManager(p,c){
   const currentWorkDate=$('current-checklist-work-date');if(currentWorkDate&&c){
     currentWorkDate.addEventListener('change',()=>{c.workDate=currentWorkDate.value||todayISO();save('pratiche-data',pratiche,statusP||null)});
   }
-  const completeCurrent=$('complete-current-checklist');if(completeCurrent&&c){
-    completeCurrent.addEventListener('change',()=>{if(!completeCurrent.checked)return;c.workDate=$('current-checklist-work-date')?.value||c.workDate||todayISO();completeWorkingChecklist(p,c)});
+  const sendCurrent=$('send-current-checklist-history');if(sendCurrent&&c){
+    sendCurrent.addEventListener('click',()=>{
+      c.workDate=$('current-checklist-work-date')?.value||c.workDate||todayISO();
+      completeWorkingChecklist(p,c);
+    });
   }
 
   if(!c)return;

@@ -1629,3 +1629,110 @@ body.auth-pending .wrap{display:none}
     max-width:none;
   }
 }
+
+
+/* V18 — Termini rimossi, checklist con pulsante, stato pratica contenuto */
+.manager-board-v18{
+  grid-template-columns:minmax(240px,.70fr) minmax(360px,1fr) minmax(360px,1fr);
+}
+
+/* Checklist: invio a cronologia tramite pulsante */
+.simple-checklist-close-v18{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:12px;
+  padding:10px;
+  border:1px solid var(--line2);
+  border-radius:7px;
+  background:#0b0f13;
+}
+.simple-checklist-close-v18 label{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.simple-checklist-close-v18 input[type=date]{
+  width:155px;
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+}
+.send-chronology-btn-v18{
+  min-height:35px;
+  white-space:nowrap;
+  padding-left:13px!important;
+  padding-right:13px!important;
+}
+
+/* Stato pratica: nessun campo deve uscire dalla colonna destra */
+.status-card-v17 .practice-info-row-v14{
+  min-width:0;
+  overflow:hidden;
+}
+.status-card-v17 .practice-info-main-v14{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 28px!important;
+  gap:7px;
+  min-width:0;
+}
+.status-card-v17 .practice-info-main-v14 select,
+.status-card-v17 .practice-info-main-v14 input{
+  grid-column:1;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.status-card-v17 .practice-info-main-v14 .del-btn{
+  grid-column:2;
+  grid-row:1 / span 2;
+  align-self:center;
+}
+.status-card-v17 .practice-info-detail-v14{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px;
+  padding-left:0!important;
+  margin-top:8px;
+  min-width:0;
+}
+.status-card-v17 .practice-info-detail-v14 label,
+.status-card-v17 .practice-info-remaining-v14{
+  min-width:0;
+  max-width:100%;
+}
+.status-card-v17 .practice-info-detail-v14 input,
+.status-card-v17 .practice-info-detail-v14 select{
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.status-card-v17 .practice-info-remaining-v14{
+  justify-content:flex-end;
+}
+.status-card-v17 .timeline-v10{
+  grid-template-columns:1fr!important;
+}
+
+@media(max-width:980px){
+  .manager-board-v18{
+    grid-template-columns:1fr 1fr;
+  }
+}
+@media(max-width:760px){
+  .simple-checklist-close-v18{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .simple-checklist-close-v18 input[type=date]{
+    width:100%;
+  }
+  .send-chronology-btn-v18{
+    width:100%;
+  }
+  .status-card-v17 .practice-info-detail-v14{
+    grid-template-columns:1fr!important;
+  }
+}

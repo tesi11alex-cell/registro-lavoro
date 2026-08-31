@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V17
+GESTIONALE REGISTRO LAVORO V18
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,31 +8,21 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-GESTIONE PRATICA V17
-Impostata seguendo il tuo schizzo:
+MODIFICHE V18
 
-- COLONNA SINISTRA stretta:
-  Cliente / Società
-  Oggetto
-  Comune
-  Via
-  Priorità
-  Pagamento
-  Info catastali (Foglio / Mappale / Sub.)
-  Fase lavoro
-  + sotto Termini pratica
+TERMINI PRATICA
+- Eliminato il riquadro Termini pratica dalla Gestione.
+- Eliminata anche la voce Scadenze/Termini dal menu.
+- Termine e scadenza si gestiscono dentro Stato pratica e Cronologia.
+- I dati già presenti restano nel database, non vengono cancellati.
 
-- COLONNA CENTRALE:
-  Checklist
+CHECKLIST
+- Eliminato il flag “Sposta in storia”.
+- Rimane la data.
+- Aggiunto il pulsante “Invia a cronologia”.
+- Se la checklist non è completa viene chiesta conferma prima dell'invio.
 
-- COLONNA DESTRA:
-  Stato pratica e Cronologia
-
-- SOTTO a centro+destra:
-  Note pratica
-
-Rispetto alla V16:
-- tolti i due flag laterali;
-- Checklist e Stato pratica ora si vedono insieme;
-- Note pratica spostate sotto, come fascia separata;
-- la colonna dati a sinistra resta più stretta.
+STATO PRATICA E CRONOLOGIA
+- Sistemato il campo Termine che usciva dal riquadro.
+- I campi ora si adattano alla larghezza della colonna.
+- Tipo, oggetto, data, protocollo, termine, scadenza e tempo residuo restano dentro la scheda.
