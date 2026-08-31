@@ -418,3 +418,160 @@ body.auth-pending .wrap{display:none}
   .hero-location-grid,.hero-status-grid{grid-template-columns:1fr}
   .checklist-model-add-v9{grid-template-columns:1fr}
 }
+
+
+/* V10 — Checklist 1/2, Note 1/2, Storia sotto */
+.manager-top-halves-v10{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  border-bottom:1px solid var(--line);
+}
+.manager-half-v10{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  min-height:500px;
+}
+.manager-half-v10:first-child{border-right:1px solid var(--line)}
+.manager-half-body-v10{
+  flex:1;
+  min-height:0;
+  padding:12px 14px;
+}
+.manager-half-footer-v10{
+  padding:12px 14px;
+  border-top:1px solid var(--line2);
+  background:#0b0f13;
+}
+
+.manager-third-head-v10{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.manager-third-head-v10 h3{flex:0 0 auto}
+.checklist-switch-v10{
+  max-width:260px;
+  min-width:180px;
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+  padding:6px 8px!important;
+  font-size:10px!important;
+}
+
+.checklist-editor-v10{display:flex;flex-direction:column;min-height:100%}
+.checklist-name-row-v10{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:end;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--line2);
+}
+.checklist-name-row-v10 label{display:flex;flex-direction:column;gap:5px}
+.checklist-name-input-v10{
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+  font-size:17px!important;
+  font-weight:650!important;
+}
+.checklist-main-actions-v10{display:flex;gap:6px}
+.checklist-progress-v10{
+  padding:9px 0 5px;
+  font:500 9px 'IBM Plex Mono',monospace;
+  color:var(--faint);
+}
+.check-list-v10{padding:0!important}
+.checklist-complete-v10{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 135px auto;
+  gap:10px;
+  align-items:center;
+  margin-top:12px;
+  padding:10px;
+  border:1px solid var(--line2);
+  border-radius:6px;
+  background:#0b0f13;
+}
+.checklist-complete-v10 input[type=date]{
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+}
+.checklist-complete-note-v10{
+  font-size:9px;
+  color:var(--faint);
+  margin-top:3px;
+}
+.complete-check-label-v10{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:10px;
+  color:var(--dim);
+}
+.complete-check-label-v10 .working-complete-check{margin:0}
+
+.checklist-footer-v10{display:flex;flex-direction:column;gap:8px}
+.prebuilt-title-v10{
+  font:600 9px 'IBM Plex Mono',monospace;
+  text-transform:uppercase;
+  color:var(--faint);
+}
+.checklist-model-add-v10{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:7px;
+}
+.checklist-model-add-v10 select{
+  background:var(--panel2)!important;
+  border-color:var(--line)!important;
+}
+.subtle-v10{align-self:flex-start}
+
+.manager-notes-v10{
+  min-height:425px!important;
+  max-height:none!important;
+  height:100%;
+  background:var(--panel2)!important;
+  border-color:#242b33!important;
+}
+
+.manager-history-full-v10{
+  border-top:0;
+}
+.history-full-body-v10{
+  padding:12px 14px 16px;
+  min-height:160px;
+}
+.timeline-v10{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  border:0;
+}
+.timeline-v10 .timeline-item-v6{
+  margin:0;
+  border:1px solid var(--line2);
+  border-radius:6px;
+  min-width:0;
+}
+.timeline-v10 .timeline-empty{
+  grid-column:1/-1;
+}
+
+@media(max-width:1000px){
+  .manager-top-halves-v10{grid-template-columns:1fr}
+  .manager-half-v10:first-child{border-right:0;border-bottom:1px solid var(--line)}
+  .manager-notes-v10{min-height:260px!important}
+  .timeline-v10{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .manager-third-head-v10{align-items:flex-start;flex-direction:column}
+  .checklist-switch-v10{width:100%;max-width:none}
+  .checklist-name-row-v10{grid-template-columns:1fr}
+  .checklist-main-actions-v10{justify-content:flex-start}
+  .checklist-complete-v10{grid-template-columns:1fr}
+  .checklist-model-add-v10{grid-template-columns:1fr}
+  .timeline-v10{grid-template-columns:1fr}
+}

@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V9
+GESTIONALE REGISTRO LAVORO V10
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -6,18 +6,16 @@ SOSTITUISCI SU GITHUB:
 - gestionale-v4.js
 - sw.js
 
-NON serve sostituire auth-v4.js rispetto alla V6.
+NON serve sostituire auth-v4.js.
 
-CORREZIONI / NOVITÀ
-- Corretto Apri dalla Dashboard e dalle scadenze: ora seleziona sempre la pratica e apre Gestione pratica.
-- Gestione pratica mostra una vera scheda:
-  Società/Cliente grande, Oggetto pratica, Comune, Via, Informazioni catastali, Priorità, Pagamento.
-- I dati principali sono modificabili direttamente in Gestione pratica.
-- Crea checklist resta la libreria dei MODELLI generali.
-- Esempio: crei modello “CILA” con i documenti standard.
-- Nella pratica scegli “CILA” -> Aggiungi.
-- Le voci vengono COPIATE nella pratica.
-- Puoi premere “+ Documento” per aggiungere richieste specifiche del Comune solo a quella pratica.
-- Aggiungere/togliere documenti nella pratica NON modifica il modello CILA generale.
-- Aggiunta checklist vuota funzionante.
-- Mantenuti checklist in lavorazione, storia, data modificabile, invio e protocollo.
+MODIFICHE V10
+- Gestione pratica: Checklist e Note pratica affiancate 50% / 50%.
+- Storia pratica spostata sotto, a tutta larghezza.
+- Accanto al titolo “Checklist” c'è il menu a tendina per scegliere una checklist già aggiunta alla pratica.
+- Il nome della checklist è modificabile direttamente.
+- Nella stessa riga: + Documento ed Elimina.
+- Sotto viene mostrato l'elenco dei documenti/attività.
+- + Documento aggiunge una voce solo alla checklist di quella pratica.
+- In basso: “Aggiungi checklist preimpostata” con menu dei modelli creati in Crea checklist.
+- Rimane anche la possibilità di creare una checklist vuota.
+- La checklist può essere chiusa e spostata in Storia con data modificabile.
