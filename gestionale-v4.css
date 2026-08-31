@@ -315,3 +315,72 @@ body.auth-pending .wrap{display:none}
   .working-check-row{grid-template-columns:20px 1fr}
   .working-date{grid-column:2}
 }
+
+
+/* V8 — Dashboard come registro operativo, Gestione a tre colonne */
+.panel-head-left{display:flex;align-items:center;gap:10px;min-width:0}
+.dashboard-new-practice{border-bottom:1px solid var(--line);background:#0b0f13}
+.dashboard-new-practice[hidden]{display:none}
+.dashboard-create-card{padding:14px}
+.dashboard-create-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dashboard-create-grid label{display:flex;flex-direction:column;gap:5px}
+.dashboard-create-grid input,.dashboard-create-grid select{background:var(--panel2);border-color:var(--line)}
+.dashboard-create-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+
+.deadline-card-v8{position:relative;padding:12px 13px 48px;border-bottom:1px solid var(--line2)}
+.deadline-card-v8:last-child{border-bottom:0}
+.deadline-card-v8:hover{background:#11161c}
+.deadline-open-btn{position:absolute;right:12px;bottom:10px;padding:5px 10px}
+
+.manager-toolbar-v8{grid-template-columns:minmax(260px,520px)}
+.manager-summary-v8{grid-template-columns:repeat(5,minmax(0,1fr))}
+.manager-summary-v8 select{background:var(--panel2)!important;border-color:var(--line)!important}
+
+.manager-section-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:7px}
+.manager-deadline-editor-list{display:flex;flex-direction:column;gap:6px}
+.manager-deadline-edit-row{display:grid;grid-template-columns:130px 1fr 28px;gap:7px;align-items:center}
+.manager-deadline-edit-row input{background:var(--panel2)!important;border-color:#20262e!important}
+
+.manager-thirds-v8{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:520px}
+.manager-third{min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--line)}
+.manager-third:last-child{border-right:0}
+.manager-third-head{padding:12px 14px;border-bottom:1px solid var(--line2)}
+.manager-third-head h3{margin:0;font-size:12px;font-weight:600}
+.manager-third-body{padding:12px 14px;flex:1;min-height:0}
+.manager-third-footer{border-top:1px solid var(--line2);padding:12px 14px;background:#0b0f13}
+.manager-empty.compact{padding:22px 8px}
+
+.checklist-third .check-context{padding:0 0 10px;margin-bottom:6px;border-bottom:1px solid var(--line2)}
+.checklist-third .check-list{padding:0}
+.checklist-picker-v8{display:flex;flex-direction:column;gap:8px}
+.checklist-picker-v8 label{display:flex;flex-direction:column;gap:5px}
+.checklist-picker-v8 select{background:var(--panel2);border-color:var(--line)}
+.checklist-add-row{display:grid;grid-template-columns:1fr auto auto;gap:6px}
+.checklist-add-row select{min-width:0}
+.checklist-add-row .btn{padding:7px 8px}
+
+.manager-notes-v8{min-height:210px;max-height:340px;background:var(--panel2)!important;border-color:#242b33!important}
+.working-section-v8{margin-top:16px}
+.working-section-v8 h4{margin:0 0 8px;font-size:10.5px;font-weight:600;color:var(--dim)}
+.timeline-v8{border:none;border-radius:0}
+.timeline-v8 .timeline-item-v6{border:1px solid var(--line2);border-radius:6px;margin-bottom:8px}
+.timeline-v8 .timeline-item-v6:last-child{margin-bottom:0}
+
+@media(max-width:1200px){
+  .manager-summary-v8{grid-template-columns:repeat(3,1fr)}
+  .manager-thirds-v8{grid-template-columns:1fr}
+  .manager-third{border-right:0;border-bottom:1px solid var(--line)}
+  .manager-third:last-child{border-bottom:0}
+}
+@media(max-width:900px){
+  .dashboard-create-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .dashboard-create-grid{grid-template-columns:1fr}
+  .panel-head-left{align-items:flex-start;flex-direction:column;gap:3px}
+  .manager-deadline-edit-row{grid-template-columns:1fr 28px}
+  .manager-deadline-edit-row input[type=date],.manager-deadline-edit-row input[type=text]{grid-column:1}
+  .manager-deadline-edit-row .del-btn{grid-column:2;grid-row:1 / span 2}
+  .checklist-add-row{grid-template-columns:1fr 1fr}
+  .checklist-add-row select{grid-column:1 / -1}
+}

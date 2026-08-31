@@ -27,7 +27,6 @@
 <header class="top"><div><div class="brand-kicker">Studio Geom. Alessandro Tesi</div><h1>Gestionale lavoro</h1></div><div class="authbar"><span class="cloud-status"><i id="cloudDot" class="cloud-dot"></i><span id="cloudStatus">Sincronizzazione…</span></span><span id="cloudEmail"></span><button class="logout-btn" id="logoutBtn" type="button">Esci</button></div></header>
 <nav class="app-nav" aria-label="Sezioni gestionale">
 <button class="nav-btn active" data-nav="dashboard" type="button"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg><span>Dashboard</span></button>
-<button class="nav-btn" data-nav="pratiche" type="button"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>Pratiche</span></button>
 <button class="nav-btn" data-nav="gestione" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9l2 2 4-4M8 15h8"/></svg><span>Gestione pratica</span></button>
 <button class="nav-btn" data-nav="crea-checklist" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9l2 2 4-4M8 15h5M16 13v6M13 16h6"/></svg><span>Crea checklist</span></button>
 <button class="nav-btn" data-nav="scadenze" type="button"><svg viewBox="0 0 24 24"><path d="M5 5h14v15H5zM8 3v4M16 3v4M5 9h14"/><path d="M9 13h2M13 13h2M9 16h2"/></svg><span>Scadenze</span></button>
@@ -39,12 +38,17 @@
 
 <section class="view active" data-view="dashboard">
 <div class="dashboard-grid-v7">
-<div class="panel dashboard-main-panel"><div class="panel-head"><h2><span class="accent-dot"></span>Pratiche attive</h2><span class="small-note" id="dashboard-practice-count">—</span></div><div id="dashboard-practices" class="dashboard-practices"></div></div>
+<div class="panel dashboard-main-panel">
+      <div class="panel-head">
+        <div class="panel-head-left"><h2><span class="accent-dot"></span>Pratiche attive</h2><span class="small-note" id="dashboard-practice-count">—</span></div>
+        <button class="btn gold" id="dashboard-add-practice" type="button">+ Aggiungi pratica</button>
+      </div>
+      <div id="dashboard-new-practice" class="dashboard-new-practice" hidden></div>
+      <div id="dashboard-practices" class="dashboard-practices"></div>
+    </div>
 <div class="panel dashboard-deadlines-panel"><div class="panel-head"><h2><span class="accent-dot"></span>Prossime scadenze</h2><span class="small-note" id="dashboard-count">—</span></div><div id="dashboard-deadlines" class="dashboard-list"></div></div>
 </div>
 </section>
-
-<section class="view" data-view="pratiche"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Registro pratiche attive</h2><button class="btn gold" id="add-pratica" type="button">+ Nuova pratica</button></div><div class="table-scroll"><table class="practice-table"><thead><tr><th class="num-col">N.</th><th class="w-client">Cliente</th><th class="w-comune">Comune</th><th class="w-via">Via</th><th class="w-practice">Pratica</th><th class="w-priority">Priorità</th><th class="w-del"></th></tr></thead><tbody id="tbody-pratiche"></tbody></table></div><div class="panel-foot"><div class="legend"><span><i class="overdue"></i>scaduta</span><span><i class="soon"></i>entro 7 giorni</span></div><span id="status-pratiche">—</span></div></div></section>
 
 <section class="view" data-view="gestione"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Gestione pratica</h2><span class="small-note">Checklist, invii, protocolli e storia</span></div>
 <div class="manager-toolbar-v6">

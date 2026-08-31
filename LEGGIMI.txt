@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V7
+GESTIONALE REGISTRO LAVORO V8
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -6,19 +6,18 @@ SOSTITUISCI SU GITHUB:
 - gestionale-v4.js
 - sw.js
 
-NON serve sostituire auth-v4.js rispetto alla V6.
+NON serve sostituire auth-v4.js rispetto alla V6/V7.
 
-NOVITÀ V7
-- Registro pratiche: nella colonna N. puoi digitare direttamente la posizione desiderata.
-  Esempio: scrivi 2 e la pratica viene inserita al secondo posto; quella che era 2 scende a 3.
-  Restano anche le frecce su/giù.
-- Dettaglio pratica: il pulsante per richiudere è più grande, a sinistra, con testo “Rimpicciolisci”.
-- Dashboard: Pratiche attive occupano 2/3; Prossime scadenze 1/3.
-- Ogni pratica può avere più scadenze, ciascuna con data e motivo.
-- La vecchia scadenza viene convertita automaticamente in “Scadenza principale”.
-- Tutte le scadenze compaiono in Dashboard, pagina Scadenze e Gestione pratica.
-- Gestione pratica: tra Note e Storia compare “Checklist in lavorazione”.
-- Ogni checklist in lavorazione ha flag + data modificabile.
-- Flag della checklist -> la checklist entra nella Storia pratica con quella data.
-- La data dell’evento checklist resta modificabile direttamente nella Storia pratica.
-- Protocollo/data protocollo restano disponibili nella checklist inviata.
+NOVITÀ
+- Rimossa la sezione Pratiche dal menu.
+- Dashboard = punto di ingresso operativo.
+- Pulsante + Aggiungi pratica direttamente in Dashboard.
+- Nuova pratica richiede solo:
+  nome cliente, oggetto/pratica, comune, via, priorità, pagamento.
+- Dopo “Crea e apri” si apre direttamente Gestione pratica.
+- Aggiunto pulsante Apri anche su ogni scadenza della Dashboard.
+- Gestione pratica divisa in 3 colonne uguali:
+  Checklist | Note pratica | Storia pratica.
+- Selettore checklist e aggiunta checklist spostati in basso a sinistra.
+- Priorità e pagamento modificabili direttamente in Gestione pratica.
+- Scadenze modificabili e aggiungibili direttamente in Gestione pratica.
