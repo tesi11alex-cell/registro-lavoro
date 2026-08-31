@@ -1,599 +1,88 @@
 (function(){'use strict';
-
 const S=window.storage;
-let pratiche=[],candidature=[],openPracticeId=null,managerPracticeId='';
-
+let pratiche=[],candidature=[],templates=[];
+let openPracticeId=null,managerPracticeId='',managerChecklistId='',editingTemplateId='';
 const $=id=>document.getElementById(id);
-const tbodyP=$('tbody-pratiche'),tbodyPA=$('tbody-pratiche-archiviate'),
-      tbodyC=$('tbody-candidature'),tbodyCA=$('tbody-candidature-archiviate'),
-      statusP=$('status-pratiche'),statusPA=$('status-pratiche-archiviate'),
-      statusC=$('status-candidature'),statusCA=$('status-candidature-archiviate');
-
+const tbodyP=$('tbody-pratiche'),tbodyPA=$('tbody-pratiche-archiviate'),tbodyC=$('tbody-candidature'),tbodyCA=$('tbody-candidature-archiviate'),statusP=$('status-pratiche'),statusPA=$('status-pratiche-archiviate'),statusC=$('status-candidature'),statusCA=$('status-candidature-archiviate');
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function esc(s){if(s===undefined||s===null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function daysUntil(dateStr){if(!dateStr)return null;const today=new Date();today.setHours(0,0,0,0);const d=new Date(dateStr+'T00:00:00');return Math.round((d-today)/86400000)}
 function addYears(dateStr,years){if(!dateStr||!years)return'';const a=dateStr.split('-').map(Number);if(a.length!==3||a.some(isNaN))return'';const[y,m,d]=a,ty=y+Number(years),last=new Date(ty,m,0).getDate();return`${ty}-${String(m).padStart(2,'0')}-${String(Math.min(d,last)).padStart(2,'0')}`}
 function formatDate(s){if(!s)return'—';const p=s.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s}
-function nowDate(){return new Date().toISOString().slice(0,10)}
-
-async function save(key,data,statusEl){
-  try{
-    const ok=await S.set(key,JSON.stringify(data));
-    if(statusEl)statusEl.textContent=ok?'salvato · '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'errore salvataggio';
-  }catch(e){if(statusEl)statusEl.textContent='errore salvataggio';console.error(e)}
-}
+function todayISO(){const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${day}`}
+async function save(key,data,statusEl){try{const ok=await S.set(key,JSON.stringify(data));if(statusEl)statusEl.textContent=ok?'salvato · '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'errore salvataggio';return ok}catch(e){if(statusEl)statusEl.textContent='errore salvataggio';console.error(e);return false}}
 async function load(key){try{const r=await S.get(key);return r&&r.value?JSON.parse(r.value):[]}catch(e){return[]}}
-
-function normalizeChecklist(list){
-  return Array.isArray(list)?list.map(i=>({
-    id:i.id||uid(),text:i.text||'',done:!!i.done,due:i.due||'',completedAt:i.completedAt||''
-  })):[];
-}
-function normalizePratica(p){
-  let stato=p.statoPagamento;
-  if(!stato)stato=p.pagato?'Pagato':'Da saldare';
-  if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';
-  return{
-    id:p.id||uid(),
-    cliente:p.cliente||'',
-    comune:p.comune||'',
-    via:p.via!==undefined?p.via:(p.sito||''),
-    pratica:p.pratica||'',
-    priorita:p.priorita||'Media',
-    presentata:p.presentata||'',
-    durataScadenza:p.durataScadenza||'',
-    scadenza:p.scadenza||'',
-    // Campi economici vecchi mantenuti nei dati per non perdere informazioni,
-    // ma non vengono più mostrati nel gestionale.
-    anticipo:p.anticipo||'',
-    accontoCliente:p.accontoCliente||'',
-    parcellaGeometra:p.parcellaGeometra||'',
-    statoPagamento:stato,
-    note:p.note||'',
-    fatta:!!p.fatta,
-    checklist:normalizeChecklist(p.checklist)
-  };
-}
-function normalizeCandidatura(c){
-  return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata};
-}
-function colorizePriority(sel){
-  const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};
-  sel.style.color=map[sel.value]||'';
-}
+function normalizeItem(i){return{id:i?.id||uid(),text:i?.text||'',done:!!i?.done}}
+function normalizeChecklistGroup(c){return{id:c?.id||uid(),name:c?.name||'Checklist',templateId:c?.templateId||'',items:Array.isArray(c?.items)?c.items.map(normalizeItem):[],sent:!!c?.sent,sentAt:c?.sentAt||'',protocol:c?.protocol||'',protocolDate:c?.protocolDate||'',sendNote:c?.sendNote||''}}
+function normalizeHistory(h){return{id:h?.id||uid(),type:h?.type||'note',checklistId:h?.checklistId||'',title:h?.title||'',date:h?.date||'',protocol:h?.protocol||'',protocolDate:h?.protocolDate||'',note:h?.note||''}}
+function migrateLegacyChecklist(p){if(Array.isArray(p.checklists))return p.checklists.map(normalizeChecklistGroup);if(Array.isArray(p.checklist)&&p.checklist.length){return[normalizeChecklistGroup({name:'Checklist pratica',items:p.checklist.map(i=>({id:i.id,text:i.text,done:i.done}))})]}return[]}
+function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';return{id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',fatta:!!p.fatta,checklists:migrateLegacyChecklist(p),history:Array.isArray(p.history)?p.history.map(normalizeHistory):[]}}
+function normalizeTemplate(t){return{id:t?.id||uid(),name:t?.name||'Checklist',items:Array.isArray(t?.items)?t.items.map(i=>({id:i?.id||uid(),text:i?.text||''})):[]}}
+function normalizeCandidatura(c){return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata}}
+function colorizePriority(sel){const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};sel.style.color=map[sel.value]||''}
 function payClass(s){return s==='Pagato'?'paid':s==='Acconto'?'deposit':'unpaid'}
-
-function goTo(view){
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.nav===view));
-  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.dataset.view===view));
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+function goTo(view){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.nav===view));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>goTo(b.dataset.nav)));
 
-function rowPratica(p,index){
-  const frag=document.createDocumentFragment(),tr=document.createElement('tr');
-  tr.dataset.id=p.id;tr.className='practice-main-row';
-  const scad=daysUntil(p.scadenza);let side='';
-  if(!p.fatta&&scad!==null){if(scad<0)side='overdue';else if(scad<=7)side='soon'}
+function rowPratica(p,index){const frag=document.createDocumentFragment(),tr=document.createElement('tr');tr.dataset.id=p.id;tr.className='practice-main-row';const scad=daysUntil(p.scadenza);let side='';if(!p.fatta&&scad!==null){if(scad<0)side='overdue';else if(scad<=7)side='soon'}tr.innerHTML=`<td class="num-col"><div class="rownum-wrap"><div class="rownum">${index+1}</div><div class="reorder-controls"><button class="move-btn" type="button" tabindex="-1" data-action="moveUp">↑</button><button class="move-btn" type="button" tabindex="-1" data-action="moveDown">↓</button></div></div></td><td class="side ${side}"><div class="client-wrap" data-action="openDetails"><input class="archive-check" type="checkbox" tabindex="-1" data-action="toggleArchive" ${p.fatta?'checked':''}><textarea data-f="cliente" placeholder="Nome cliente">${esc(p.cliente)}</textarea></div></td><td data-action="openDetails"><input type="text" data-f="comune" value="${esc(p.comune)}" placeholder="Comune"></td><td data-action="openDetails"><textarea data-f="via" placeholder="Via / indirizzo">${esc(p.via)}</textarea></td><td><div class="practice-open" data-action="openDetails"><textarea data-f="pratica" placeholder="Tipo pratica">${esc(p.pratica)}</textarea><button class="practice-chevron" type="button" tabindex="-1" data-action="toggleDetails">${openPracticeId===p.id?'▴':'▾'}</button></div></td><td><select data-f="priorita" class="priority-select"><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option></select></td><td><button class="del-btn" tabindex="-1" data-action="del">✕</button></td>`;colorizePriority(tr.querySelector('.priority-select'));
+const details=document.createElement('tr');details.dataset.id=p.id;details.className='notes-detail'+(openPracticeId===p.id?' open':'');details.innerHTML=`<td colspan="7"><div class="details-panel"><button class="detail-close-btn" type="button" data-action="closeDetails">▲</button><div class="details-layout"><div class="details-notes"><div class="details-title">Note</div><textarea data-f="note" placeholder="Note della pratica...">${esc(p.note)}</textarea></div><div class="details-right"><div class="detail-box"><div class="details-title">Presentata / Scadenza</div><div class="date-stack"><div class="date-row"><span class="field-label">Presentata</span><input type="date" data-f="presentata" value="${esc(p.presentata)}"></div><div class="deadline-row"><span class="field-label">Scadenza</span><select data-f="durataScadenza"><option value="" ${!p.durataScadenza?'selected':''}>Manuale</option><option value="1" ${String(p.durataScadenza)==='1'?'selected':''}>1 anno</option><option value="2" ${String(p.durataScadenza)==='2'?'selected':''}>2 anni</option><option value="3" ${String(p.durataScadenza)==='3'?'selected':''}>3 anni</option></select><input type="date" data-f="scadenza" value="${esc(p.scadenza)}"></div></div></div><div class="detail-box"><div class="details-title">Pagamento</div><select data-f="statoPagamento" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></div></div></div></div></td>`;frag.append(tr,details);return frag}
+function renderPratiche(){tbodyP.innerHTML='';tbodyPA.innerHTML='';const att=pratiche.filter(p=>!p.fatta),arc=pratiche.filter(p=>p.fatta);if(!att.length)tbodyP.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica attiva.</td></tr>';else att.forEach((p,i)=>tbodyP.appendChild(rowPratica(p,i)));if(!arc.length)tbodyPA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica archiviata.</td></tr>';else arc.forEach((p,i)=>tbodyPA.appendChild(rowPratica(p,i)))}
+function updateDeadlineVisual(tr,item){const cell=tr.children[1];cell.classList.remove('overdue','soon');if(item.fatta)return;const d=daysUntil(item.scadenza);if(d!==null){if(d<0)cell.classList.add('overdue');else if(d<=7)cell.classList.add('soon')}}
+function handlePInput(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;const f=e.target.dataset.f;if(!f)return;item[f]=e.target.value;if(f==='priorita')colorizePriority(e.target);if(f==='statoPagamento')e.target.className='pay-select '+payClass(item.statoPagamento);if((f==='presentata'||f==='durataScadenza')&&item.durataScadenza&&item.presentata){item.scadenza=addYears(item.presentata,item.durataScadenza);const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza}if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item)}
+function handlePChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){if(openPracticeId===item.id)openPracticeId=null;item.fatta=e.target.checked;if(item.fatta&&managerPracticeId===item.id){managerPracticeId='';managerChecklistId=''}renderPratiche()}if(e.target.dataset.f==='statoPagamento'){item.statoPagamento=e.target.value;e.target.className='pay-select '+payClass(item.statoPagamento)}save('pratiche-data',pratiche,item.fatta?statusPA:statusP);renderDerived()}
+function practiceGroup(item){return pratiche.filter(p=>p.fatta===item.fatta)}function movePractice(id,action){const item=pratiche.find(p=>p.id===id);if(!item)return;const group=practiceGroup(item),gi=group.findIndex(p=>p.id===id);let target=null;if(action==='moveUp'&&gi>0)target=group[gi-1];if(action==='moveDown'&&gi<group.length-1)target=group[gi+1];if(target){const a=pratiche.findIndex(p=>p.id===item.id),b=pratiche.findIndex(p=>p.id===target.id);[pratiche[a],pratiche[b]]=[pratiche[b],pratiche[a]]}}
+function setOpenPractice(id){openPracticeId=id||null;[tbodyP,tbodyPA].forEach(tb=>tb.querySelectorAll('.practice-main-row').forEach(main=>{const detail=main.nextElementSibling,isOpen=main.dataset.id===openPracticeId;if(detail&&detail.classList.contains('notes-detail'))detail.classList.toggle('open',isOpen);const b=main.querySelector('.practice-chevron');if(b)b.textContent=isOpen?'▴':'▾'}))}
+function handlePClick(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;const a=(e.target.closest('[data-action]')||{}).dataset?.action||'';if(a==='del'){pratiche=pratiche.filter(x=>x.id!==item.id);if(managerPracticeId===item.id){managerPracticeId='';managerChecklistId=''}renderPratiche();renderDerived();save('pratiche-data',pratiche,item.fatta?statusPA:statusP)}else if(['moveUp','moveDown'].includes(a)){movePractice(item.id,a);renderPratiche();renderDerived();save('pratiche-data',pratiche,item.fatta?statusPA:statusP)}else if(a==='closeDetails')setOpenPractice(null);else if(a==='toggleDetails')setOpenPractice(openPracticeId===item.id?null:item.id);else if(a==='openDetails'&&openPracticeId!==item.id)setOpenPractice(item.id)}
+[tbodyP,tbodyPA].forEach(tb=>{tb.addEventListener('input',handlePInput);tb.addEventListener('change',handlePChange);tb.addEventListener('click',handlePClick)});
+$('add-pratica').addEventListener('click',()=>{const p={id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',accontoCliente:'',parcellaGeometra:'',statoPagamento:'Da saldare',note:'',fatta:false,checklists:[],history:[]};pratiche.push(p);renderPratiche();renderDerived();save('pratiche-data',pratiche,statusP);const els=tbodyP.querySelectorAll('textarea[data-f="cliente"]');if(els.length)els[els.length-1].focus()});
 
-  tr.innerHTML=`
-    <td class="num-col">
-      <div class="rownum-wrap">
-        <div class="rownum">${index+1}</div>
-        <div class="reorder-controls">
-          <button class="move-btn" type="button" tabindex="-1" data-action="moveUp">↑</button>
-          <button class="move-btn" type="button" tabindex="-1" data-action="moveDown">↓</button>
-        </div>
-      </div>
-    </td>
-    <td class="side ${side}">
-      <div class="client-wrap" data-action="openDetails">
-        <input class="archive-check" type="checkbox" tabindex="-1" data-action="toggleArchive" ${p.fatta?'checked':''}>
-        <textarea data-f="cliente" placeholder="Nome cliente">${esc(p.cliente)}</textarea>
-      </div>
-    </td>
-    <td data-action="openDetails"><input type="text" data-f="comune" value="${esc(p.comune)}" placeholder="Comune"></td>
-    <td data-action="openDetails"><textarea data-f="via" placeholder="Via / indirizzo">${esc(p.via)}</textarea></td>
-    <td>
-      <div class="practice-open" data-action="openDetails">
-        <textarea data-f="pratica" placeholder="Tipo pratica">${esc(p.pratica)}</textarea>
-        <button class="practice-chevron" type="button" tabindex="-1" data-action="toggleDetails">${openPracticeId===p.id?'▴':'▾'}</button>
-      </div>
-    </td>
-    <td>
-      <select data-f="priorita" class="priority-select">
-        <option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option>
-        <option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option>
-        <option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option>
-      </select>
-    </td>
-    <td><button class="del-btn" tabindex="-1" data-action="del">✕</button></td>`;
-  colorizePriority(tr.querySelector('.priority-select'));
+function rowCandidatura(c,index){const tr=document.createElement('tr');tr.dataset.id=c.id;tr.innerHTML=`<td class="num-col"><div class="rownum">${index+1}</div></td><td><div class="client-wrap"><input class="archive-check" type="checkbox" data-action="toggleArchive" ${c.archiviata?'checked':''}><textarea data-f="lavoro" placeholder="Nome lavoro / ente">${esc(c.lavoro)}</textarea></div></td><td><input type="date" data-f="data" value="${esc(c.data)}"></td><td><textarea data-f="posto" placeholder="Città / luogo">${esc(c.posto)}</textarea></td><td><textarea data-f="note" placeholder="Note...">${esc(c.note)}</textarea></td><td><div class="money-wrap"><input type="number" data-f="proposta" value="${esc(c.proposta)}" step="0.01"><span class="money-suffix">€</span></div></td><td><button class="del-btn" data-action="del">✕</button></td>`;return tr}
+function renderCandidature(){tbodyC.innerHTML='';tbodyCA.innerHTML='';const att=candidature.filter(c=>!c.archiviata),arc=candidature.filter(c=>c.archiviata);if(!att.length)tbodyC.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura attiva.</td></tr>';else att.forEach((c,i)=>tbodyC.appendChild(rowCandidatura(c,i)));if(!arc.length)tbodyCA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura archiviata.</td></tr>';else arc.forEach((c,i)=>tbodyCA.appendChild(rowCandidatura(c,i)))}
+function handleCInput(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=candidature.find(x=>x.id===tr.dataset.id);if(item&&e.target.dataset.f)item[e.target.dataset.f]=e.target.value}
+function handleCChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=candidature.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){item.archiviata=e.target.checked;renderCandidature()}save('candidature-data',candidature,item.archiviata?statusCA:statusC)}
+function handleCClick(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;if(e.target.dataset.action==='del'){const item=candidature.find(x=>x.id===tr.dataset.id);candidature=candidature.filter(x=>x.id!==tr.dataset.id);renderCandidature();save('candidature-data',candidature,item&&item.archiviata?statusCA:statusC)}}
+[tbodyC,tbodyCA].forEach(tb=>{tb.addEventListener('input',handleCInput);tb.addEventListener('change',handleCChange);tb.addEventListener('click',handleCClick)});
+$('add-candidatura').addEventListener('click',()=>{candidature.unshift({id:uid(),lavoro:'',data:'',posto:'',proposta:'',note:'',archiviata:false});renderCandidature();save('candidature-data',candidature,statusC);const f=tbodyC.querySelector('textarea[data-f="lavoro"]');if(f)f.focus()});
 
-  const details=document.createElement('tr');
-  details.dataset.id=p.id;
-  details.className='notes-detail'+(openPracticeId===p.id?' open':'');
-  details.innerHTML=`
-    <td colspan="7">
-      <div class="details-panel">
-        <button class="detail-close-btn" type="button" data-action="closeDetails">▲</button>
-        <div class="details-layout">
-          <div class="details-notes">
-            <div class="details-title">Note</div>
-            <textarea data-f="note" placeholder="Note della pratica...">${esc(p.note)}</textarea>
-          </div>
-          <div class="details-right">
-            <div class="detail-box">
-              <div class="details-title">Presentata / Scadenza</div>
-              <div class="date-stack">
-                <div class="date-row">
-                  <span class="field-label">Presentata</span>
-                  <input type="date" data-f="presentata" value="${esc(p.presentata)}">
-                </div>
-                <div class="deadline-row">
-                  <span class="field-label">Scadenza</span>
-                  <select data-f="durataScadenza">
-                    <option value="" ${!p.durataScadenza?'selected':''}>Manuale</option>
-                    <option value="1" ${String(p.durataScadenza)==='1'?'selected':''}>1 anno</option>
-                    <option value="2" ${String(p.durataScadenza)==='2'?'selected':''}>2 anni</option>
-                    <option value="3" ${String(p.durataScadenza)==='3'?'selected':''}>3 anni</option>
-                  </select>
-                  <input type="date" data-f="scadenza" value="${esc(p.scadenza)}">
-                </div>
-              </div>
-            </div>
-            <div class="detail-box">
-              <div class="details-title">Pagamento</div>
-              <select data-f="statoPagamento" class="pay-select ${payClass(p.statoPagamento)}">
-                <option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option>
-                <option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option>
-                <option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </td>`;
-  frag.append(tr,details);
-  return frag;
-}
-
-function renderPratiche(){
-  tbodyP.innerHTML='';tbodyPA.innerHTML='';
-  const att=pratiche.filter(p=>!p.fatta),arc=pratiche.filter(p=>p.fatta);
-  if(!att.length)tbodyP.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica attiva.</td></tr>';
-  else att.forEach((p,i)=>tbodyP.appendChild(rowPratica(p,i)));
-  if(!arc.length)tbodyPA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica archiviata.</td></tr>';
-  else arc.forEach((p,i)=>tbodyPA.appendChild(rowPratica(p,i)));
-}
-function updateDeadlineVisual(tr,item){
-  const cell=tr.children[1];cell.classList.remove('overdue','soon');if(item.fatta)return;
-  const d=daysUntil(item.scadenza);if(d!==null){if(d<0)cell.classList.add('overdue');else if(d<=7)cell.classList.add('soon')}
-}
-function handlePInput(e){
-  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
-  const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
-  const f=e.target.dataset.f;if(!f)return;
-  item[f]=e.target.value;
-  if(f==='priorita')colorizePriority(e.target);
-  if(f==='statoPagamento')e.target.className='pay-select '+payClass(item.statoPagamento);
-  if((f==='presentata'||f==='durataScadenza')&&item.durataScadenza&&item.presentata){
-    item.scadenza=addYears(item.presentata,item.durataScadenza);
-    const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza;
-  }
-  if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item);
-}
-function handlePChange(e){
-  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
-  const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
-  if(e.target.dataset.action==='toggleArchive'){
-    if(openPracticeId===item.id)openPracticeId=null;
-    item.fatta=e.target.checked;
-    if(item.fatta&&managerPracticeId===item.id)managerPracticeId='';
-    renderPratiche();
-  }
-  if(e.target.dataset.f==='statoPagamento'){
-    item.statoPagamento=e.target.value;
-    e.target.className='pay-select '+payClass(item.statoPagamento);
-  }
-  save('pratiche-data',pratiche,item.fatta?statusPA:statusP);
-  renderDerived();
-}
-function practiceGroup(item){return pratiche.filter(p=>p.fatta===item.fatta)}
-function movePractice(id,action){
-  const item=pratiche.find(p=>p.id===id);if(!item)return;
-  const group=practiceGroup(item),gi=group.findIndex(p=>p.id===id);let target=null;
-  if(action==='moveUp'&&gi>0)target=group[gi-1];
-  if(action==='moveDown'&&gi<group.length-1)target=group[gi+1];
-  if(target){
-    const a=pratiche.findIndex(p=>p.id===item.id),b=pratiche.findIndex(p=>p.id===target.id);
-    [pratiche[a],pratiche[b]]=[pratiche[b],pratiche[a]];
-  }
-}
-function setOpenPractice(id){
-  openPracticeId=id||null;
-  [tbodyP,tbodyPA].forEach(tb=>tb.querySelectorAll('.practice-main-row').forEach(main=>{
-    const detail=main.nextElementSibling,isOpen=main.dataset.id===openPracticeId;
-    if(detail&&detail.classList.contains('notes-detail'))detail.classList.toggle('open',isOpen);
-    const b=main.querySelector('.practice-chevron');if(b)b.textContent=isOpen?'▴':'▾';
-  }));
-}
-function handlePClick(e){
-  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
-  const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
-  const a=(e.target.closest('[data-action]')||{}).dataset?.action||'';
-  if(a==='del'){
-    pratiche=pratiche.filter(x=>x.id!==item.id);
-    if(managerPracticeId===item.id)managerPracticeId='';
-    renderPratiche();renderDerived();save('pratiche-data',pratiche,item.fatta?statusPA:statusP);
-  }else if(['moveUp','moveDown'].includes(a)){
-    movePractice(item.id,a);renderPratiche();renderDerived();save('pratiche-data',pratiche,item.fatta?statusPA:statusP);
-  }else if(a==='closeDetails')setOpenPractice(null);
-  else if(a==='toggleDetails')setOpenPractice(openPracticeId===item.id?null:item.id);
-  else if(a==='openDetails'&&openPracticeId!==item.id)setOpenPractice(item.id);
-}
-[tbodyP,tbodyPA].forEach(tb=>{
-  tb.addEventListener('input',handlePInput);
-  tb.addEventListener('change',handlePChange);
-  tb.addEventListener('click',handlePClick);
-});
-$('add-pratica').addEventListener('click',()=>{
-  const p={
-    id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',
-    presentata:'',durataScadenza:'',scadenza:'',
-    anticipo:'',accontoCliente:'',parcellaGeometra:'',
-    statoPagamento:'Da saldare',note:'',fatta:false,checklist:[]
-  };
-  pratiche.push(p);renderPratiche();renderDerived();save('pratiche-data',pratiche,statusP);
-  const els=tbodyP.querySelectorAll('textarea[data-f="cliente"]');if(els.length)els[els.length-1].focus();
-});
-
-function rowCandidatura(c,index){
-  const tr=document.createElement('tr');tr.dataset.id=c.id;
-  tr.innerHTML=`
-    <td class="num-col"><div class="rownum">${index+1}</div></td>
-    <td><div class="client-wrap"><input class="archive-check" type="checkbox" data-action="toggleArchive" ${c.archiviata?'checked':''}><textarea data-f="lavoro" placeholder="Nome lavoro / ente">${esc(c.lavoro)}</textarea></div></td>
-    <td><input type="date" data-f="data" value="${esc(c.data)}"></td>
-    <td><textarea data-f="posto" placeholder="Città / luogo">${esc(c.posto)}</textarea></td>
-    <td><textarea data-f="note" placeholder="Note...">${esc(c.note)}</textarea></td>
-    <td><div class="money-wrap"><input type="number" data-f="proposta" value="${esc(c.proposta)}" step="0.01"><span class="money-suffix">€</span></div></td>
-    <td><button class="del-btn" data-action="del">✕</button></td>`;
-  return tr;
-}
-function renderCandidature(){
-  tbodyC.innerHTML='';tbodyCA.innerHTML='';
-  const att=candidature.filter(c=>!c.archiviata),arc=candidature.filter(c=>c.archiviata);
-  if(!att.length)tbodyC.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura attiva.</td></tr>';
-  else att.forEach((c,i)=>tbodyC.appendChild(rowCandidatura(c,i)));
-  if(!arc.length)tbodyCA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura archiviata.</td></tr>';
-  else arc.forEach((c,i)=>tbodyCA.appendChild(rowCandidatura(c,i)));
-}
-function handleCInput(e){
-  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
-  const item=candidature.find(x=>x.id===tr.dataset.id);
-  if(item&&e.target.dataset.f)item[e.target.dataset.f]=e.target.value;
-}
-function handleCChange(e){
-  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
-  const item=candidature.find(x=>x.id===tr.dataset.id);if(!item)return;
-  if(e.target.dataset.action==='toggleArchive'){item.archiviata=e.target.checked;renderCandidature()}
-  save('candidature-data',candidature,item.archiviata?statusCA:statusC);
-}
-function handleCClick(e){
-  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
-  if(e.target.dataset.action==='del'){
-    const item=candidature.find(x=>x.id===tr.dataset.id);
-    candidature=candidature.filter(x=>x.id!==tr.dataset.id);
-    renderCandidature();save('candidature-data',candidature,item&&item.archiviata?statusCA:statusC);
-  }
-}
-[tbodyC,tbodyCA].forEach(tb=>{
-  tb.addEventListener('input',handleCInput);
-  tb.addEventListener('change',handleCChange);
-  tb.addEventListener('click',handleCClick);
-});
-$('add-candidatura').addEventListener('click',()=>{
-  candidature.unshift({id:uid(),lavoro:'',data:'',posto:'',proposta:'',note:'',archiviata:false});
-  renderCandidature();save('candidature-data',candidature,statusC);
-  const f=tbodyC.querySelector('textarea[data-f="lavoro"]');if(f)f.focus();
-});
-
-function deadlineStatus(p){
-  const d=daysUntil(p.scadenza);
-  if(d===null)return{label:'—',cls:'normal'};
-  if(d<0)return{label:`Scaduta ${Math.abs(d)} gg`,cls:'overdue'};
-  if(d===0)return{label:'Oggi',cls:'soon'};
-  if(d<=7)return{label:`${d} gg`,cls:'soon'};
-  return{label:`${d} gg`,cls:'normal'};
-}
-function sortedDeadlines(){
-  return pratiche.filter(p=>!p.fatta&&p.scadenza).slice().sort((a,b)=>a.scadenza.localeCompare(b.scadenza));
-}
-function openManager(id){
-  managerPracticeId=id;
-  renderManager();
-  goTo('gestione');
-}
-function openPracticeContext(id){
-  const p=pratiche.find(x=>x.id===id);if(!p)return;
-  if(p.fatta){goTo('archivio');setOpenPractice(id)}
-  else openManager(id);
-}
-
-function renderDashboardPractices(){
-  const host=$('dashboard-practices');
-  const active=pratiche.filter(p=>!p.fatta);
-  $('dashboard-practice-count').textContent=active.length===1?'1 pratica attiva':`${active.length} pratiche attive`;
-  if(!active.length){
-    host.innerHTML='<div class="manager-empty">Nessuna pratica attiva.</div>';
-    return;
-  }
-  const groups=[
-    {key:'Alta',label:'Priorità alta',cls:'high'},
-    {key:'Media',label:'Priorità media',cls:'medium'},
-    {key:'Bassa',label:'Priorità bassa',cls:'low'}
-  ];
-  host.innerHTML=groups.map(g=>{
-    const items=active.filter(p=>p.priorita===g.key);
-    if(!items.length)return'';
-    return `<div class="priority-group">
-      <div class="priority-group-title">
-        <span class="priority-name ${g.cls}">${g.label}</span>
-        <span>${items.length}</span>
-      </div>
-      ${items.map(p=>`
-        <div class="dashboard-practice-row">
-          <div class="dash-client">${esc(p.cliente||'Senza cliente')}</div>
-          <div class="dash-practice">${esc(p.pratica||'Pratica senza titolo')}</div>
-          <div class="dash-address">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div>
-          <div class="dash-payment"><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></div>
-          <div class="dash-open"><button class="btn" type="button" data-dashboard-open="${p.id}">Apri</button></div>
-        </div>`).join('')}
-    </div>`;
-  }).join('');
-  host.querySelectorAll('[data-dashboard-open]').forEach(b=>b.addEventListener('click',()=>openManager(b.dataset.dashboardOpen)));
-}
-
-function renderDashboardDeadlines(){
-  const host=$('dashboard-deadlines'),list=sortedDeadlines().slice(0,10);
-  $('dashboard-count').textContent=list.length?`${list.length} visualizzate`:'Nessuna scadenza';
-  if(!list.length){
-    host.innerHTML='<div class="manager-empty">Nessuna scadenza inserita nelle pratiche attive.</div>';
-    return;
-  }
-  host.innerHTML=list.map(p=>{
-    const s=deadlineStatus(p);
-    return `<div class="deadline-item">
-      <div class="deadline-date">${formatDate(p.scadenza)}</div>
-      <div class="deadline-client">${esc(p.cliente||'Senza cliente')}</div>
-      <div class="deadline-practice">${esc(p.pratica||'Pratica senza titolo')} · ${esc([p.comune,p.via].filter(Boolean).join(' — '))}</div>
-      <div class="deadline-status ${s.cls}">${s.label}</div>
-    </div>`;
-  }).join('');
-}
+function deadlineStatus(p){const d=daysUntil(p.scadenza);if(d===null)return{label:'—',cls:'normal'};if(d<0)return{label:`Scaduta ${Math.abs(d)} gg`,cls:'overdue'};if(d===0)return{label:'Oggi',cls:'soon'};if(d<=7)return{label:`${d} gg`,cls:'soon'};return{label:`${d} gg`,cls:'normal'}}
+function sortedDeadlines(){return pratiche.filter(p=>!p.fatta&&p.scadenza).slice().sort((a,b)=>a.scadenza.localeCompare(b.scadenza))}
+function openManager(id){managerPracticeId=id;const p=pratiche.find(x=>x.id===id&&!x.fatta);managerChecklistId=p?.checklists?.[0]?.id||'';renderManager();goTo('gestione')}
+function openPracticeContext(id){const p=pratiche.find(x=>x.id===id);if(!p)return;if(p.fatta){goTo('archivio');setOpenPractice(id)}else openManager(id)}
+function renderDashboardPractices(){const host=$('dashboard-practices'),active=pratiche.filter(p=>!p.fatta);$('dashboard-practice-count').textContent=active.length===1?'1 pratica attiva':`${active.length} pratiche attive`;if(!active.length){host.innerHTML='<div class="manager-empty">Nessuna pratica attiva.</div>';return}const groups=[{key:'Alta',label:'Priorità alta',cls:'high'},{key:'Media',label:'Priorità media',cls:'medium'},{key:'Bassa',label:'Priorità bassa',cls:'low'}];host.innerHTML=groups.map(g=>{const items=active.filter(p=>p.priorita===g.key);if(!items.length)return'';return`<div class="priority-group"><div class="priority-group-title"><span class="priority-name ${g.cls}">${g.label}</span><span>${items.length}</span></div>${items.map(p=>`<div class="dashboard-practice-row"><div class="dash-client">${esc(p.cliente||'Senza cliente')}</div><div class="dash-practice">${esc(p.pratica||'Pratica senza titolo')}</div><div class="dash-address">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div><div class="dash-payment"><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></div><div class="dash-open"><button class="btn" type="button" data-dashboard-open="${p.id}">Apri</button></div></div>`).join('')}</div>`}).join('');host.querySelectorAll('[data-dashboard-open]').forEach(b=>b.addEventListener('click',()=>openManager(b.dataset.dashboardOpen)))}
+function renderDashboardDeadlines(){const host=$('dashboard-deadlines'),list=sortedDeadlines().slice(0,10);$('dashboard-count').textContent=list.length?`${list.length} visualizzate`:'Nessuna scadenza';if(!list.length){host.innerHTML='<div class="manager-empty">Nessuna scadenza inserita nelle pratiche attive.</div>';return}host.innerHTML=list.map(p=>{const s=deadlineStatus(p);return`<div class="deadline-item"><div class="deadline-date">${formatDate(p.scadenza)}</div><div class="deadline-client">${esc(p.cliente||'Senza cliente')}</div><div class="deadline-practice">${esc(p.pratica||'Pratica senza titolo')} · ${esc([p.comune,p.via].filter(Boolean).join(' — '))}</div><div class="deadline-status ${s.cls}">${s.label}</div></div>`}).join('')}
 function renderDashboard(){renderDashboardPractices();renderDashboardDeadlines()}
+function renderScadenze(){const tb=$('tbody-scadenze'),list=sortedDeadlines();if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessuna scadenza inserita.</td></tr>';return}tb.innerHTML=list.map(p=>{const s=deadlineStatus(p);return`<tr class="link-row" data-open-practice="${p.id}"><td class="mono">${formatDate(p.scadenza)}</td><td><strong>${esc(p.cliente||'—')}</strong></td><td>${esc(p.pratica||'—')}</td><td class="muted">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</td><td><span class="deadline-status ${s.cls}">${s.label}</span></td></tr>`}).join('');tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)))}
+function getClientList(){const map=new Map();pratiche.forEach(p=>{const name=(p.cliente||'').trim();if(!name)return;const key=name.toLocaleLowerCase('it');if(!map.has(key))map.set(key,{name,active:0,arch:0,last:null});const c=map.get(key);p.fatta?c.arch++:c.active++;c.last=p});return[...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'))}
+function renderClienti(){const q=($('client-search').value||'').trim().toLocaleLowerCase('it'),filter=$('client-filter').value;let list=getClientList();if(q)list=list.filter(c=>c.name.toLocaleLowerCase('it').includes(q));if(filter==='active')list=list.filter(c=>c.active>0);if(filter==='archived')list=list.filter(c=>c.active===0&&c.arch>0);$('clienti-count').textContent=list.length===1?'1 cliente':`${list.length} clienti`;const tb=$('tbody-clienti');if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessun cliente corrisponde alla ricerca.</td></tr>';return}tb.innerHTML=list.map(c=>`<tr><td><strong>${esc(c.name)}</strong></td><td class="mono">${c.active}</td><td class="mono">${c.arch}</td><td class="muted">${esc([c.last?.comune,c.last?.via].filter(Boolean).join(' · ')||'—')}</td><td><button class="btn" data-client-open="${esc(c.name)}">Apri</button></td></tr>`).join('');tb.querySelectorAll('[data-client-open]').forEach(b=>b.addEventListener('click',()=>{const p=pratiche.find(x=>x.cliente===b.dataset.clientOpen&&!x.fatta)||pratiche.find(x=>x.cliente===b.dataset.clientOpen);if(p)openPracticeContext(p.id)}))}
+$('client-search').addEventListener('input',renderClienti);$('client-filter').addEventListener('change',renderClienti);
 
-function renderScadenze(){
-  const tb=$('tbody-scadenze'),list=sortedDeadlines();
-  if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessuna scadenza inserita.</td></tr>';return}
-  tb.innerHTML=list.map(p=>{
-    const s=deadlineStatus(p);
-    return `<tr class="link-row" data-open-practice="${p.id}">
-      <td class="mono">${formatDate(p.scadenza)}</td>
-      <td><strong>${esc(p.cliente||'—')}</strong></td>
-      <td>${esc(p.pratica||'—')}</td>
-      <td class="muted">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</td>
-      <td><span class="deadline-status ${s.cls}">${s.label}</span></td>
-    </tr>`;
-  }).join('');
-  tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)));
-}
+function renderTemplateSelects(){const opts='<option value="">Seleziona modello...</option>'+templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');$('template-to-practice').innerHTML=opts}
+function resetTemplateEditor(){editingTemplateId='';$('template-name').value='';$('template-items').innerHTML='';$('template-status').textContent='';addTemplateEditorItem('')}
+function addTemplateEditorItem(text){const row=document.createElement('div');row.className='template-item';row.innerHTML=`<input type="text" value="${esc(text)}" placeholder="Documento / attività richiesta"><button class="del-btn" type="button" data-template-item-del="1">✕</button>`;$('template-items').appendChild(row)}
+function renderTemplates(){renderTemplateSelects();$('template-count').textContent=templates.length===1?'1 checklist':`${templates.length} checklist`;const host=$('template-list');if(!templates.length){host.innerHTML='<div class="template-empty">Non hai ancora creato modelli di checklist.</div>';return}host.innerHTML=templates.map(t=>`<div class="template-card"><div class="template-card-head"><div><div class="template-card-name">${esc(t.name)}</div><div class="template-card-count">${t.items.length} voci</div></div><div class="template-card-actions"><button class="btn" data-template-edit="${t.id}">Modifica</button><button class="btn danger" data-template-del="${t.id}">Elimina</button></div></div><div class="template-preview">${t.items.slice(0,5).map(i=>esc(i.text)).join(' · ')}${t.items.length>5?' · …':''}</div></div>`).join('');host.querySelectorAll('[data-template-edit]').forEach(b=>b.addEventListener('click',()=>editTemplate(b.dataset.templateEdit)));host.querySelectorAll('[data-template-del]').forEach(b=>b.addEventListener('click',()=>deleteTemplate(b.dataset.templateDel)))}
+function editTemplate(id){const t=templates.find(x=>x.id===id);if(!t)return;editingTemplateId=id;$('template-name').value=t.name;$('template-items').innerHTML='';t.items.forEach(i=>addTemplateEditorItem(i.text));if(!t.items.length)addTemplateEditorItem('');$('template-status').textContent='Modifica modello';goTo('crea-checklist')}
+function deleteTemplate(id){const t=templates.find(x=>x.id===id);if(!t)return;if(!confirm(`Eliminare il modello “${t.name}”? Le checklist già inserite nelle pratiche restano.`))return;templates=templates.filter(x=>x.id!==id);if(editingTemplateId===id)resetTemplateEditor();save('checklist-templates-data',templates,$('template-status'));renderTemplates()}
+$('new-template').addEventListener('click',resetTemplateEditor);$('add-template-item').addEventListener('click',()=>addTemplateEditorItem(''));
+$('template-items').addEventListener('click',e=>{if(!e.target.dataset.templateItemDel)return;const rows=$('template-items').querySelectorAll('.template-item');if(rows.length===1){rows[0].querySelector('input').value='';return}e.target.closest('.template-item').remove()});
+$('save-template').addEventListener('click',async()=>{const name=$('template-name').value.trim(),items=[...$('template-items').querySelectorAll('input')].map(i=>i.value.trim()).filter(Boolean);if(!name){$('template-status').textContent='Inserisci il nome';$('template-name').focus();return}if(!items.length){$('template-status').textContent='Inserisci almeno una voce';return}if(editingTemplateId){const t=templates.find(x=>x.id===editingTemplateId);if(t){t.name=name;t.items=items.map((text,i)=>({id:t.items[i]?.id||uid(),text}))}}else{const t={id:uid(),name,items:items.map(text=>({id:uid(),text}))};templates.push(t);editingTemplateId=t.id}await save('checklist-templates-data',templates,$('template-status'));$('template-status').textContent='Checklist salvata';renderTemplates()});
 
-function getClientList(){
-  const map=new Map();
-  pratiche.forEach(p=>{
-    const name=(p.cliente||'').trim();if(!name)return;
-    const key=name.toLocaleLowerCase('it');
-    if(!map.has(key))map.set(key,{name,active:0,arch:0,last:null,practices:[]});
-    const c=map.get(key);
-    p.fatta?c.arch++:c.active++;
-    c.last=p;c.practices.push(p);
-  });
-  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'));
-}
-function renderClienti(){
-  const q=($('client-search').value||'').trim().toLocaleLowerCase('it');
-  const filter=$('client-filter').value;
-  let list=getClientList();
-  if(q)list=list.filter(c=>c.name.toLocaleLowerCase('it').includes(q));
-  if(filter==='active')list=list.filter(c=>c.active>0);
-  if(filter==='archived')list=list.filter(c=>c.active===0&&c.arch>0);
+function currentPractice(){return pratiche.find(p=>p.id===managerPracticeId&&!p.fatta)}
+function currentChecklist(){const p=currentPractice();return p?.checklists?.find(c=>c.id===managerChecklistId)||null}
+function ensureManagerChecklist(){const p=currentPractice();if(!p){managerChecklistId='';return}if(!p.checklists.some(c=>c.id===managerChecklistId))managerChecklistId=p.checklists[0]?.id||''}
+function renderManagerSelects(){const psel=$('practice-manager-select'),att=pratiche.filter(p=>!p.fatta);psel.innerHTML='<option value="">Seleziona una pratica...</option>'+att.map(p=>`<option value="${p.id}">${esc((p.cliente||'Senza cliente')+' — '+(p.pratica||'Pratica')+(p.comune?' — '+p.comune:''))}</option>`).join('');if(att.some(p=>p.id===managerPracticeId))psel.value=managerPracticeId;else{managerPracticeId='';managerChecklistId='';psel.value=''}ensureManagerChecklist();const p=currentPractice(),csel=$('practice-checklist-select');csel.innerHTML='<option value="">Nessuna checklist</option>'+(p?.checklists||[]).map(c=>`<option value="${c.id}">${esc(c.name)}${c.sent?' — inviata':''}</option>`).join('');csel.value=managerChecklistId||'';renderTemplateSelects()}
+function uniqueChecklistName(p,name){let base=name||'Checklist',n=base,i=2;const names=new Set(p.checklists.map(c=>c.name.toLocaleLowerCase('it')));while(names.has(n.toLocaleLowerCase('it'))){n=`${base} (${i++})`}return n}
+function addTemplateToPractice(){const p=currentPractice(),tid=$('template-to-practice').value,t=templates.find(x=>x.id===tid);if(!p){alert('Seleziona prima una pratica.');return}if(!t){alert('Seleziona una checklist creata.');return}const c={id:uid(),name:uniqueChecklistName(p,t.name),templateId:t.id,items:t.items.map(i=>({id:uid(),text:i.text,done:false})),sent:false,sentAt:'',protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;$('template-to-practice').value='';save('pratiche-data',pratiche,statusP);renderManager()}
+function addEmptyChecklist(){const p=currentPractice();if(!p){alert('Seleziona prima una pratica.');return}const raw=prompt('Nome della nuova checklist:','');if(raw===null)return;const name=raw.trim();if(!name)return;const c={id:uid(),name:uniqueChecklistName(p,name),templateId:'',items:[],sent:false,sentAt:'',protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;save('pratiche-data',pratiche,statusP);renderManager()}
+function syncHistoryForChecklist(p,c){let h=p.history.find(x=>x.type==='checklist-send'&&x.checklistId===c.id);if(!c.sent){p.history=p.history.filter(x=>!(x.type==='checklist-send'&&x.checklistId===c.id));return}if(!h){h={id:uid(),type:'checklist-send',checklistId:c.id,title:'',date:'',protocol:'',protocolDate:'',note:''};p.history.push(h)}h.title=`Checklist ${c.name} inviata`;h.date=c.sentAt;h.protocol=c.protocol;h.protocolDate=c.protocolDate;h.note=c.sendNote}
+function renderHistory(p){const events=p.history.slice();if(p.presentata)events.push({id:'presentata',type:'presentata',title:'Pratica presentata',date:p.presentata,protocol:'',protocolDate:'',note:''});events.sort((a,b)=>(b.date||'').localeCompare(a.date||''));if(!events.length)return'<div class="timeline-empty">Nessun evento registrato.</div>';return events.map(h=>`<div class="timeline-item-v6"><div class="timeline-top"><div class="timeline-title">${esc(h.title||'Evento')}</div><div class="timeline-date">${formatDate(h.date)}</div></div>${h.protocol?`<div class="timeline-protocol">Protocollo: ${esc(h.protocol)}${h.protocolDate?' · '+formatDate(h.protocolDate):''}</div>`:''}${h.note?`<div class="timeline-sub">${esc(h.note)}</div>`:''}</div>`).join('')}
+function renderSendBox(c){const allDone=c.items.length>0&&c.items.every(i=>i.done);if(!allDone&&!c.sent)return'';const sentAt=c.sentAt||todayISO();return`<div class="send-box ${c.sent?'sent':''}"><div class="send-box-head"><div><div class="send-box-title">${c.sent?'Invio confermato':'Checklist completa — conferma invio'}</div><div class="send-box-note">${c.sent?'Puoi aggiornare protocollo e data anche dopo l’invio.':'La storia pratica viene aggiornata solo dopo la conferma.'}</div></div></div><div class="send-grid"><label><span class="field-label">Data invio</span><input id="send-date" type="date" value="${esc(sentAt)}"></label><label><span class="field-label">Protocollo</span><input id="send-protocol" type="text" value="${esc(c.protocol)}" placeholder="Es. PG 12345/2026"></label><label><span class="field-label">Data protocollo</span><input id="send-protocol-date" type="date" value="${esc(c.protocolDate)}"></label></div><label class="send-note-field"><span class="field-label">Nota invio</span><textarea id="send-note" placeholder="Nota facoltativa...">${esc(c.sendNote)}</textarea></label><div class="send-actions">${c.sent?'<button class="btn" id="reopen-checklist" type="button">Riapri checklist</button>':''}<button class="btn gold" id="confirm-send" type="button">${c.sent?'Salva dati invio':'Conferma invio'}</button></div></div>`}
+function renderManager(){renderManagerSelects();const body=$('manager-body'),p=currentPractice();if(!p){body.innerHTML='<div class="manager-empty">Seleziona una pratica attiva per aprirla.</div>';return}ensureManagerChecklist();const c=currentChecklist();const sentCount=p.checklists.filter(x=>x.sent).length;body.innerHTML=`<div class="manager-summary"><div class="summary-cell"><div class="label">Cliente</div><div class="value">${esc(p.cliente||'—')}</div></div><div class="summary-cell"><div class="label">Pratica</div><div class="value">${esc(p.pratica||'—')}</div></div><div class="summary-cell"><div class="label">Indirizzo</div><div class="value">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div></div><div class="summary-cell"><div class="label">Scadenza</div><div class="value mono">${formatDate(p.scadenza)}</div></div><div class="summary-cell"><div class="label">Checklist inviate</div><div class="value">${sentCount}/${p.checklists.length}</div></div></div><div class="manager-columns"><div class="manager-main">${c?renderChecklistPanel(c):'<div class="manager-empty">Questa pratica non ha checklist. Seleziona un modello sopra e premi “Aggiungi”.</div>'}</div><div class="manager-side"><h3 class="manager-section-title">Note pratica</h3><textarea class="manager-notes" id="manager-notes" placeholder="Note della pratica...">${esc(p.note)}</textarea><h3 class="manager-section-title">Storia pratica</h3><div class="timeline">${renderHistory(p)}</div></div></div>`;bindManagerEvents(p,c)}
+function renderChecklistPanel(c){const done=c.items.filter(i=>i.done).length,total=c.items.length;return`<div class="check-context"><div><div class="check-context-name">${esc(c.name)}</div><div class="check-context-meta">${done}/${total} completate${c.sent?' · inviata '+formatDate(c.sentAt):''}</div></div><div class="check-context-actions">${!c.sent?'<button class="btn" id="add-check-item" type="button">+ Voce</button>':''}<button class="btn danger" id="delete-practice-checklist" type="button">Elimina checklist</button></div></div><div class="check-list" id="check-list">${total?c.items.map(i=>`<div class="check-item-v6 ${i.done?'done':''} ${c.sent?'sent':''}" data-check-id="${i.id}"><input type="checkbox" data-check-f="done" ${i.done?'checked':''} ${c.sent?'disabled':''}><input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Documento / attività" ${c.sent?'readonly':''}><button class="del-btn" data-check-del="1" ${c.sent?'disabled':''}>✕</button></div>`).join(''):'<div class="check-empty">Checklist vuota. Aggiungi una voce.</div>'}</div>${renderSendBox(c)}`}
+function bindManagerEvents(p,c){const notes=$('manager-notes');if(notes){notes.addEventListener('input',()=>p.note=notes.value);notes.addEventListener('change',()=>save('pratiche-data',pratiche,statusP))}if(!c)return;const list=$('check-list');if(list){list.addEventListener('input',e=>{const row=e.target.closest('[data-check-id]'),item=c.items.find(i=>i.id===row?.dataset.checkId);if(item&&e.target.dataset.checkF==='text')item.text=e.target.value});list.addEventListener('change',e=>{const row=e.target.closest('[data-check-id]'),item=c.items.find(i=>i.id===row?.dataset.checkId);if(!item)return;if(e.target.dataset.checkF==='done')item.done=e.target.checked;save('pratiche-data',pratiche,statusP);renderManager()});list.addEventListener('click',e=>{if(!e.target.dataset.checkDel||c.sent)return;const row=e.target.closest('[data-check-id]');c.items=c.items.filter(i=>i.id!==row.dataset.checkId);save('pratiche-data',pratiche,statusP);renderManager()})}const add=$('add-check-item');if(add)add.addEventListener('click',()=>{if(c.sent)return;c.items.push({id:uid(),text:'',done:false});save('pratiche-data',pratiche,statusP);renderManager();const inputs=document.querySelectorAll('#check-list input[data-check-f="text"]');if(inputs.length)inputs[inputs.length-1].focus()});const del=$('delete-practice-checklist');if(del)del.addEventListener('click',()=>{if(!confirm(`Eliminare la checklist “${c.name}” da questa pratica?`))return;p.checklists=p.checklists.filter(x=>x.id!==c.id);p.history=p.history.filter(h=>h.checklistId!==c.id);managerChecklistId=p.checklists[0]?.id||'';save('pratiche-data',pratiche,statusP);renderManager()});const confirmBtn=$('confirm-send');if(confirmBtn)confirmBtn.addEventListener('click',()=>{const allDone=c.items.length>0&&c.items.every(i=>i.done);if(!allDone&&!c.sent)return;c.sent=true;c.sentAt=$('send-date').value||todayISO();c.protocol=$('send-protocol').value.trim();c.protocolDate=$('send-protocol-date').value;c.sendNote=$('send-note').value.trim();syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP);renderManager()});const reopen=$('reopen-checklist');if(reopen)reopen.addEventListener('click',()=>{if(!confirm('Riaprire questa checklist? La conferma di invio verrà tolta dalla storia pratica.'))return;c.sent=false;c.sentAt='';c.protocol='';c.protocolDate='';c.sendNote='';syncHistoryForChecklist(p,c);save('pratiche-data',pratiche,statusP);renderManager()})}
+$('practice-manager-select').addEventListener('change',e=>{managerPracticeId=e.target.value;const p=currentPractice();managerChecklistId=p?.checklists?.[0]?.id||'';renderManager()});$('practice-checklist-select').addEventListener('change',e=>{managerChecklistId=e.target.value;renderManager()});$('add-template-to-practice').addEventListener('click',addTemplateToPractice);$('add-empty-checklist').addEventListener('click',addEmptyChecklist);
 
-  $('clienti-count').textContent=list.length===1?'1 cliente':`${list.length} clienti`;
-  const tb=$('tbody-clienti');
-  if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessun cliente corrisponde alla ricerca.</td></tr>';return}
-  tb.innerHTML=list.map(c=>`<tr>
-    <td><strong>${esc(c.name)}</strong></td>
-    <td class="mono">${c.active}</td>
-    <td class="mono">${c.arch}</td>
-    <td class="muted">${esc([c.last?.comune,c.last?.via].filter(Boolean).join(' · ')||'—')}</td>
-    <td><button class="btn" data-client-open="${esc(c.name)}">Apri</button></td>
-  </tr>`).join('');
-  tb.querySelectorAll('[data-client-open]').forEach(b=>b.addEventListener('click',()=>{
-    const name=b.dataset.clientOpen;
-    const p=pratiche.find(x=>x.cliente===name&&!x.fatta)||pratiche.find(x=>x.cliente===name);
-    if(p)openPracticeContext(p.id);
-  }));
-}
-$('client-search').addEventListener('input',renderClienti);
-$('client-filter').addEventListener('change',renderClienti);
-
-function baseChecklistItems(){
-  return[
-    'Incarico / documentazione cliente',
-    'Rilievo / verifica stato di fatto',
-    'Elaborati e documentazione tecnica',
-    'Presentazione / invio pratica',
-    'Protocollo / ricevuta',
-    'Chiusura pratica'
-  ].map(text=>({id:uid(),text,done:false,due:'',completedAt:''}));
-}
-function renderManagerSelect(){
-  const sel=$('practice-manager-select'),att=pratiche.filter(p=>!p.fatta),previous=managerPracticeId;
-  sel.innerHTML='<option value="">Seleziona una pratica...</option>'+
-    att.map(p=>`<option value="${p.id}">${esc((p.cliente||'Senza cliente')+' — '+(p.pratica||'Pratica')+(p.comune?' — '+p.comune:''))}</option>`).join('');
-  if(att.some(p=>p.id===previous))sel.value=previous;
-  else{managerPracticeId='';sel.value=''}
-}
-function buildTimeline(p){
-  const events=[];
-  if(p.presentata)events.push({date:p.presentata,text:'Pratica presentata'});
-  p.checklist.forEach(i=>{
-    if(i.done)events.push({
-      date:i.completedAt||i.due||'',
-      text:`Completato: ${i.text||'Attività checklist'}`
-    });
-  });
-  return events.sort((a,b)=>{
-    if(!a.date&&!b.date)return 0;
-    if(!a.date)return 1;if(!b.date)return-1;
-    return b.date.localeCompare(a.date);
-  });
-}
-function renderManager(){
-  renderManagerSelect();
-  const body=$('manager-body'),p=pratiche.find(x=>x.id===managerPracticeId&&!x.fatta);
-  if(!p){body.innerHTML='<div class="manager-empty">Seleziona una pratica attiva per aprirla.</div>';return}
-  const done=p.checklist.filter(i=>i.done).length,total=p.checklist.length,timeline=buildTimeline(p);
-
-  body.innerHTML=`
-    <div class="manager-summary">
-      <div class="summary-cell"><div class="label">Cliente</div><div class="value">${esc(p.cliente||'—')}</div></div>
-      <div class="summary-cell"><div class="label">Pratica</div><div class="value">${esc(p.pratica||'—')}</div></div>
-      <div class="summary-cell"><div class="label">Indirizzo</div><div class="value">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div></div>
-      <div class="summary-cell"><div class="label">Scadenza</div><div class="value mono">${formatDate(p.scadenza)}</div></div>
-      <div class="summary-cell"><div class="label">Pagamento</div><div class="value"><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></div></div>
-    </div>
-
-    <div class="manager-columns">
-      <div class="manager-main">
-        <div class="check-head">
-          <div><strong>Checklist</strong><div class="check-progress">${done}/${total} completate</div></div>
-        </div>
-        <div class="check-list" id="check-list">
-          ${total?p.checklist.map(i=>`
-            <div class="check-item ${i.done?'done':''}" data-check-id="${i.id}">
-              <input type="checkbox" data-check-f="done" ${i.done?'checked':''}>
-              <input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Attività">
-              <input type="date" data-check-f="due" value="${esc(i.due)}">
-              <button class="del-btn" data-check-del="1">✕</button>
-            </div>`).join(''):'<div class="check-empty">Checklist vuota. Aggiungi una voce o usa “Checklist base”.</div>'}
-        </div>
-      </div>
-      <div class="manager-side">
-        <h3 class="manager-section-title">Note pratica</h3>
-        <textarea class="manager-notes" id="manager-notes" placeholder="Note della pratica...">${esc(p.note)}</textarea>
-
-        <h3 class="manager-section-title">Storia pratica</h3>
-        <div class="timeline">
-          ${timeline.length?timeline.map(e=>`
-            <div class="timeline-item">
-              <div class="timeline-date">${e.date?formatDate(e.date):'—'}</div>
-              <div class="timeline-text">${esc(e.text)}</div>
-            </div>`).join(''):'<div class="timeline-empty">La storia si compila con presentazione e attività completate.</div>'}
-        </div>
-      </div>
-    </div>`;
-
-  const list=$('check-list');
-  list.addEventListener('input',handleChecklistInput);
-  list.addEventListener('change',handleChecklistChange);
-  list.addEventListener('click',handleChecklistClick);
-
-  const notes=$('manager-notes');
-  notes.addEventListener('input',()=>{p.note=notes.value});
-  notes.addEventListener('change',()=>save('pratiche-data',pratiche,statusP));
-}
-function currentManagerPractice(){return pratiche.find(p=>p.id===managerPracticeId&&!p.fatta)}
-function handleChecklistInput(e){
-  const p=currentManagerPractice();if(!p)return;
-  const row=e.target.closest('[data-check-id]'),item=p.checklist.find(i=>i.id===row?.dataset.checkId);
-  if(item&&e.target.dataset.checkF==='text')item.text=e.target.value;
-}
-function handleChecklistChange(e){
-  const p=currentManagerPractice();if(!p)return;
-  const row=e.target.closest('[data-check-id]'),item=p.checklist.find(i=>i.id===row?.dataset.checkId);
-  if(!item)return;
-  const f=e.target.dataset.checkF;
-  if(f==='done'){
-    item.done=e.target.checked;
-    item.completedAt=item.done?(item.completedAt||nowDate()):'';
-  }else if(f)item[f]=e.target.value;
-  save('pratiche-data',pratiche,statusP);
-  renderManager();
-}
-function handleChecklistClick(e){
-  if(!e.target.dataset.checkDel)return;
-  const p=currentManagerPractice(),row=e.target.closest('[data-check-id]');
-  if(!p||!row)return;
-  p.checklist=p.checklist.filter(i=>i.id!==row.dataset.checkId);
-  save('pratiche-data',pratiche,statusP);renderManager();
-}
-$('practice-manager-select').addEventListener('change',e=>{managerPracticeId=e.target.value;renderManager()});
-$('add-check-item').addEventListener('click',()=>{
-  const p=currentManagerPractice();if(!p)return;
-  p.checklist.push({id:uid(),text:'',done:false,due:'',completedAt:''});
-  save('pratiche-data',pratiche,statusP);renderManager();
-  const inputs=document.querySelectorAll('#check-list input[data-check-f="text"]');
-  if(inputs.length)inputs[inputs.length-1].focus();
-});
-$('base-checklist').addEventListener('click',()=>{
-  const p=currentManagerPractice();if(!p||p.checklist.length)return;
-  p.checklist=baseChecklistItems();
-  save('pratiche-data',pratiche,statusP);renderManager();
-});
-
-function renderDerived(){renderDashboard();renderScadenze();renderClienti();renderManager()}
-
-window.addEventListener('cloud-storage-change',event=>{
-  try{
-    const d=event.detail||{};
-    if(d.key==='pratiche-data'){
-      const parsed=JSON.parse(d.value||'[]');
-      if(Array.isArray(parsed)){
-        const incoming=parsed.map(normalizePratica);
-        if(JSON.stringify(incoming)!==JSON.stringify(pratiche)){
-          pratiche=incoming;renderPratiche();renderDerived();
-        }
-        statusP.textContent=statusPA.textContent='sincronizzato';
-      }
-    }else if(d.key==='candidature-data'){
-      const parsed=JSON.parse(d.value||'[]');
-      if(Array.isArray(parsed)){
-        const incoming=parsed.map(normalizeCandidatura);
-        if(JSON.stringify(incoming)!==JSON.stringify(candidature)){
-          candidature=incoming;renderCandidature();
-        }
-        statusC.textContent=statusCA.textContent='sincronizzato';
-      }
-    }
-  }catch(e){console.warn('Aggiornamento cloud non applicato',e)}
-});
-
+function renderDerived(){renderDashboard();renderScadenze();renderClienti();renderManager();renderTemplates()}
+window.addEventListener('cloud-storage-change',event=>{try{const d=event.detail||{};if(d.key==='pratiche-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizePratica);if(JSON.stringify(incoming)!==JSON.stringify(pratiche)){pratiche=incoming;renderPratiche();renderDerived()}statusP.textContent=statusPA.textContent='sincronizzato'}}else if(d.key==='candidature-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizeCandidatura);if(JSON.stringify(incoming)!==JSON.stringify(candidature)){candidature=incoming;renderCandidature()}statusC.textContent=statusCA.textContent='sincronizzato'}}else if(d.key==='checklist-templates-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizeTemplate);if(JSON.stringify(incoming)!==JSON.stringify(templates)){templates=incoming;renderTemplates();renderManager()}}}}catch(e){console.warn('Aggiornamento cloud non applicato',e)}});
 $('logoutBtn').addEventListener('click',()=>window.REGISTRO_AUTH&&window.REGISTRO_AUTH.signOut());
-
-(async function init(){
-  statusP.textContent=statusPA.textContent='caricamento…';
-  statusC.textContent=statusCA.textContent='caricamento…';
-
-  const p=await load('pratiche-data');
-  pratiche=Array.isArray(p)?p.map(normalizePratica):[];
-  renderPratiche();renderDerived();
-  statusP.textContent=statusPA.textContent=pratiche.length?'caricato':'pronto';
-
-  const c=await load('candidature-data');
-  candidature=Array.isArray(c)?c.map(normalizeCandidatura):[];
-  renderCandidature();
-  statusC.textContent=statusCA.textContent=candidature.length?'caricato':'pronto';
-})();
+(async function init(){statusP.textContent=statusPA.textContent='caricamento…';statusC.textContent=statusCA.textContent='caricamento…';const [p,c,t]=await Promise.all([load('pratiche-data'),load('candidature-data'),load('checklist-templates-data')]);pratiche=Array.isArray(p)?p.map(normalizePratica):[];candidature=Array.isArray(c)?c.map(normalizeCandidatura):[];templates=Array.isArray(t)?t.map(normalizeTemplate):[];renderPratiche();renderCandidature();resetTemplateEditor();renderDerived();statusP.textContent=statusPA.textContent=pratiche.length?'caricato':'pronto';statusC.textContent=statusCA.textContent=candidature.length?'caricato':'pronto'})();
 })();

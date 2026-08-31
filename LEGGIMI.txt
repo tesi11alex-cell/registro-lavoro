@@ -1,26 +1,24 @@
-GESTIONALE REGISTRO LAVORO V5
+GESTIONALE REGISTRO LAVORO V6
 
 SOSTITUISCI nel repository:
 - index.html
 - gestionale-v4.css
 - gestionale-v4.js
+- auth-v4.js
 - sw.js
 
-NON modificare:
-- auth-v4.js
-- firebase-config.js
-- firestore.rules.txt
-- manifest-v3.webmanifest
-- le icone
+NOVITÀ:
+- Pulsante Crea checklist in alto.
+- Modelli checklist riutilizzabili e sincronizzati con Firebase.
+- Più checklist nella stessa pratica.
+- In Gestione pratica selezioni la checklist dal menu.
+- Nessuna data sulle singole voci checklist.
+- Quando tutte le voci sono spuntate compare Conferma invio.
+- Conferma invio: data invio, protocollo, data protocollo, nota.
+- Dopo la conferma l'evento entra in Storia pratica.
+- Protocollo e data possono essere aggiornati anche dopo l'invio.
+- Checklist inviata rimane consultabile e bloccata; può essere riaperta esplicitamente.
+- Le vecchie checklist V5 vengono migrate automaticamente in una checklist chiamata Checklist pratica.
 
-MODIFICHE:
-- Dashboard: pratiche attive sopra, ordinate Alta / Media / Bassa.
-- Priorità modificabile solo nel Registro Pratiche.
-- Pulsante Apri dalla Dashboard -> Gestione pratica.
-- Gestione pratica: checklist + note + storia pratica.
-- Clienti: ricerca per nome + filtro.
-- Rimossa Contabilità.
-- Rimossi i campi economici dalle pratiche.
-- Resta solo lo stato Pagato / Acconto / Da saldare.
-- Archivio spostato subito prima di Candidature.
-- I vecchi importi NON vengono cancellati da Firebase: semplicemente non vengono più mostrati.
+IMPORTANTE:
+Questa versione richiede anche la sostituzione di auth-v4.js perché deve sincronizzare il nuovo archivio checklist-templates-data.
