@@ -1,36 +1,599 @@
 (function(){'use strict';
-const S=window.storage;let pratiche=[],candidature=[],openPracticeId=null,managerPracticeId='';
-const $=id=>document.getElementById(id);const tbodyP=$('tbody-pratiche'),tbodyPA=$('tbody-pratiche-archiviate'),tbodyC=$('tbody-candidature'),tbodyCA=$('tbody-candidature-archiviate'),statusP=$('status-pratiche'),statusPA=$('status-pratiche-archiviate'),statusC=$('status-candidature'),statusCA=$('status-candidature-archiviate');
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}function esc(s){if(s===undefined||s===null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}function daysUntil(dateStr){if(!dateStr)return null;const today=new Date();today.setHours(0,0,0,0);const d=new Date(dateStr+'T00:00:00');return Math.round((d-today)/86400000)}function addYears(dateStr,years){if(!dateStr||!years)return'';const a=dateStr.split('-').map(Number);if(a.length!==3||a.some(isNaN))return'';const[y,m,d]=a,ty=y+Number(years),last=new Date(ty,m,0).getDate();return`${ty}-${String(m).padStart(2,'0')}-${String(Math.min(d,last)).padStart(2,'0')}`}function moneyNumber(v){const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:0}function moneyTotal(a,p,c){const n=moneyNumber(a)+moneyNumber(p)-moneyNumber(c);return Number.isInteger(n)?String(n):n.toFixed(2)}function euro(n){return new Intl.NumberFormat('it-IT',{minimumFractionDigits:0,maximumFractionDigits:2}).format(Number(n)||0)+' €'}function formatDate(s){if(!s)return'—';const p=s.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s}
-async function save(key,data,statusEl){try{const ok=await S.set(key,JSON.stringify(data));if(statusEl)statusEl.textContent=ok?'salvato · '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'errore salvataggio'}catch(e){if(statusEl)statusEl.textContent='errore salvataggio';console.error(e)}}async function load(key){try{const r=await S.get(key);return r&&r.value?JSON.parse(r.value):[]}catch(e){return[]}}
-function normalizeChecklist(list){return Array.isArray(list)?list.map(i=>({id:i.id||uid(),text:i.text||'',done:!!i.done,due:i.due||''})):[]}function normalizePratica(p){let stato=p.statoPagamento;if(!stato)stato=p.pagato?'Pagato':'Da saldare';if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';return{id:p.id||uid(),cliente:p.cliente||'',comune:p.comune||'',via:p.via!==undefined?p.via:(p.sito||''),pratica:p.pratica||'',priorita:p.priorita||'Media',presentata:p.presentata||'',durataScadenza:p.durataScadenza||'',scadenza:p.scadenza||'',anticipo:p.anticipo||'',accontoCliente:p.accontoCliente||'',parcellaGeometra:p.parcellaGeometra||'',statoPagamento:stato,note:p.note||'',fatta:!!p.fatta,checklist:normalizeChecklist(p.checklist)}}function normalizeCandidatura(c){return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata}}
-function colorizePriority(sel){const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};sel.style.color=map[sel.value]||''}function payClass(s){return s==='Pagato'?'paid':s==='Acconto'?'deposit':'unpaid'}
-function goTo(view){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.nav===view));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'})}document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>goTo(b.dataset.nav)));
-function rowPratica(p,index){const frag=document.createDocumentFragment(),tr=document.createElement('tr');tr.dataset.id=p.id;tr.className='practice-main-row';const scad=daysUntil(p.scadenza);let side='';if(!p.fatta&&scad!==null){if(scad<0)side='overdue';else if(scad<=7)side='soon'}tr.innerHTML=`<td class="num-col"><div class="rownum-wrap"><div class="rownum">${index+1}</div><div class="reorder-controls"><button class="move-btn" type="button" tabindex="-1" data-action="moveUp">↑</button><button class="move-btn" type="button" tabindex="-1" data-action="moveDown">↓</button></div></div></td><td class="side ${side}"><div class="client-wrap" data-action="openDetails"><input class="archive-check" type="checkbox" tabindex="-1" data-action="toggleArchive" ${p.fatta?'checked':''}><textarea data-f="cliente" placeholder="Nome cliente">${esc(p.cliente)}</textarea></div></td><td data-action="openDetails"><input type="text" data-f="comune" value="${esc(p.comune)}" placeholder="Comune"></td><td data-action="openDetails"><textarea data-f="via" placeholder="Via / indirizzo">${esc(p.via)}</textarea></td><td><div class="practice-open" data-action="openDetails"><textarea data-f="pratica" placeholder="Tipo pratica">${esc(p.pratica)}</textarea><button class="practice-chevron" type="button" tabindex="-1" data-action="toggleDetails">${openPracticeId===p.id?'▴':'▾'}</button></div></td><td><select data-f="priorita" class="priority-select"><option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option><option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option><option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option></select></td><td><button class="del-btn" tabindex="-1" data-action="del">✕</button></td>`;colorizePriority(tr.querySelector('.priority-select'));
-const details=document.createElement('tr');details.dataset.id=p.id;details.className='notes-detail'+(openPracticeId===p.id?' open':'');details.innerHTML=`<td colspan="7"><div class="details-panel"><button class="detail-close-btn" type="button" data-action="closeDetails">▲</button><div class="details-layout"><div class="details-notes"><div class="details-title">Note</div><textarea data-f="note" placeholder="Note della pratica...">${esc(p.note)}</textarea></div><div class="details-right"><div class="detail-box"><div class="details-title">Presentata / Scadenza</div><div class="date-stack"><div class="date-row"><span class="field-label">Presentata</span><input type="date" data-f="presentata" value="${esc(p.presentata)}"></div><div class="deadline-row"><span class="field-label">Scadenza</span><select data-f="durataScadenza"><option value="" ${!p.durataScadenza?'selected':''}>Manuale</option><option value="1" ${String(p.durataScadenza)==='1'?'selected':''}>1 anno</option><option value="2" ${String(p.durataScadenza)==='2'?'selected':''}>2 anni</option><option value="3" ${String(p.durataScadenza)==='3'?'selected':''}>3 anni</option></select><input type="date" data-f="scadenza" value="${esc(p.scadenza)}"></div></div></div><div class="detail-box"><div class="money-stack"><div class="money-row"><span class="field-label">Soldi anticipati da me</span><div class="money-wrap"><input type="number" data-f="anticipo" value="${esc(p.anticipo)}" step="0.01"><span class="money-suffix">€</span></div></div><div class="money-row"><span class="field-label">Acconto cliente</span><div class="money-wrap"><input type="number" data-f="accontoCliente" value="${esc(p.accontoCliente)}" step="0.01"><span class="money-suffix">€</span></div></div><div class="money-row"><span class="field-label">Parcella Geometra</span><div class="money-wrap"><input type="number" data-f="parcellaGeometra" value="${esc(p.parcellaGeometra)}" step="0.01"><span class="money-suffix">€</span></div></div><div class="money-row"><span class="field-label">Totale</span><div class="money-total-wrap"><input type="text" data-total-costi value="${moneyTotal(p.anticipo,p.parcellaGeometra,p.accontoCliente)}" readonly><span class="money-suffix">€</span></div></div></div></div><div class="detail-box"><div class="details-title">Pagamento</div><select data-f="statoPagamento" class="pay-select ${payClass(p.statoPagamento)}"><option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option><option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option><option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option></select></div></div></div></div></td>`;frag.append(tr,details);return frag}
-function renderPratiche(){tbodyP.innerHTML='';tbodyPA.innerHTML='';const att=pratiche.filter(p=>!p.fatta),arc=pratiche.filter(p=>p.fatta);if(!att.length)tbodyP.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica attiva.</td></tr>';else att.forEach((p,i)=>tbodyP.appendChild(rowPratica(p,i)));if(!arc.length)tbodyPA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica archiviata.</td></tr>';else arc.forEach((p,i)=>tbodyPA.appendChild(rowPratica(p,i)))}
-function updateDeadlineVisual(tr,item){const cell=tr.children[1];cell.classList.remove('overdue','soon');if(item.fatta)return;const d=daysUntil(item.scadenza);if(d!==null){if(d<0)cell.classList.add('overdue');else if(d<=7)cell.classList.add('soon')}}
-function handlePInput(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;const f=e.target.dataset.f;if(!f)return;item[f]=e.target.value;if(f==='priorita')colorizePriority(e.target);if(f==='statoPagamento')e.target.className='pay-select '+payClass(item.statoPagamento);if((f==='presentata'||f==='durataScadenza')&&item.durataScadenza&&item.presentata){item.scadenza=addYears(item.presentata,item.durataScadenza);const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza}if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item);if(['anticipo','accontoCliente','parcellaGeometra'].includes(f)){const t=tr.querySelector('[data-total-costi]');if(t)t.value=moneyTotal(item.anticipo,item.parcellaGeometra,item.accontoCliente)}}
-function handlePChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){if(openPracticeId===item.id)openPracticeId=null;item.fatta=e.target.checked;if(item.fatta&&managerPracticeId===item.id)managerPracticeId='';renderPratiche()}if(e.target.dataset.f==='statoPagamento'){item.statoPagamento=e.target.value;e.target.className='pay-select '+payClass(item.statoPagamento)}save('pratiche-data',pratiche,item.fatta?statusPA:statusP);renderDerived()}
-function practiceGroup(item){return pratiche.filter(p=>p.fatta===item.fatta)}function movePractice(id,action){const item=pratiche.find(p=>p.id===id);if(!item)return;const group=practiceGroup(item),gi=group.findIndex(p=>p.id===id);let target=null;if(action==='moveUp'&&gi>0)target=group[gi-1];if(action==='moveDown'&&gi<group.length-1)target=group[gi+1];if(target){const a=pratiche.findIndex(p=>p.id===item.id),b=pratiche.findIndex(p=>p.id===target.id);[pratiche[a],pratiche[b]]=[pratiche[b],pratiche[a]]}}
-function setOpenPractice(id){openPracticeId=id||null;[tbodyP,tbodyPA].forEach(tb=>tb.querySelectorAll('.practice-main-row').forEach(main=>{const detail=main.nextElementSibling,isOpen=main.dataset.id===openPracticeId;if(detail&&detail.classList.contains('notes-detail'))detail.classList.toggle('open',isOpen);const b=main.querySelector('.practice-chevron');if(b)b.textContent=isOpen?'▴':'▾'}))}
-function handlePClick(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;const a=(e.target.closest('[data-action]')||{}).dataset?.action||'';if(a==='del'){pratiche=pratiche.filter(x=>x.id!==item.id);if(managerPracticeId===item.id)managerPracticeId='';renderPratiche();renderDerived();save('pratiche-data',pratiche,item.fatta?statusPA:statusP)}else if(['moveUp','moveDown'].includes(a)){movePractice(item.id,a);renderPratiche();save('pratiche-data',pratiche,item.fatta?statusPA:statusP)}else if(a==='closeDetails')setOpenPractice(null);else if(a==='toggleDetails')setOpenPractice(openPracticeId===item.id?null:item.id);else if(a==='openDetails'&&openPracticeId!==item.id)setOpenPractice(item.id)}
-[tbodyP,tbodyPA].forEach(tb=>{tb.addEventListener('input',handlePInput);tb.addEventListener('change',handlePChange);tb.addEventListener('click',handlePClick)});$('add-pratica').addEventListener('click',()=>{const p={id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',presentata:'',durataScadenza:'',scadenza:'',anticipo:'',accontoCliente:'',parcellaGeometra:'',statoPagamento:'Da saldare',note:'',fatta:false,checklist:[]};pratiche.push(p);renderPratiche();renderDerived();save('pratiche-data',pratiche,statusP);const els=tbodyP.querySelectorAll('textarea[data-f="cliente"]');if(els.length)els[els.length-1].focus()});
-function rowCandidatura(c,index){const tr=document.createElement('tr');tr.dataset.id=c.id;tr.innerHTML=`<td class="num-col"><div class="rownum">${index+1}</div></td><td><div class="client-wrap"><input class="archive-check" type="checkbox" data-action="toggleArchive" ${c.archiviata?'checked':''}><textarea data-f="lavoro" placeholder="Nome lavoro / ente">${esc(c.lavoro)}</textarea></div></td><td><input type="date" data-f="data" value="${esc(c.data)}"></td><td><textarea data-f="posto" placeholder="Città / luogo">${esc(c.posto)}</textarea></td><td><textarea data-f="note" placeholder="Note...">${esc(c.note)}</textarea></td><td><div class="money-wrap"><input type="number" data-f="proposta" value="${esc(c.proposta)}" step="0.01"><span class="money-suffix">€</span></div></td><td><button class="del-btn" data-action="del">✕</button></td>`;return tr}
-function renderCandidature(){tbodyC.innerHTML='';tbodyCA.innerHTML='';const att=candidature.filter(c=>!c.archiviata),arc=candidature.filter(c=>c.archiviata);if(!att.length)tbodyC.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura attiva.</td></tr>';else att.forEach((c,i)=>tbodyC.appendChild(rowCandidatura(c,i)));if(!arc.length)tbodyCA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura archiviata.</td></tr>';else arc.forEach((c,i)=>tbodyCA.appendChild(rowCandidatura(c,i)))}function handleCInput(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=candidature.find(x=>x.id===tr.dataset.id);if(item&&e.target.dataset.f)item[e.target.dataset.f]=e.target.value}function handleCChange(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;const item=candidature.find(x=>x.id===tr.dataset.id);if(!item)return;if(e.target.dataset.action==='toggleArchive'){item.archiviata=e.target.checked;renderCandidature()}save('candidature-data',candidature,item.archiviata?statusCA:statusC)}function handleCClick(e){const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;if(e.target.dataset.action==='del'){const item=candidature.find(x=>x.id===tr.dataset.id);candidature=candidature.filter(x=>x.id!==tr.dataset.id);renderCandidature();save('candidature-data',candidature,item&&item.archiviata?statusCA:statusC)}}[tbodyC,tbodyCA].forEach(tb=>{tb.addEventListener('input',handleCInput);tb.addEventListener('change',handleCChange);tb.addEventListener('click',handleCClick)});$('add-candidatura').addEventListener('click',()=>{candidature.unshift({id:uid(),lavoro:'',data:'',posto:'',proposta:'',note:'',archiviata:false});renderCandidature();save('candidature-data',candidature,statusC);const f=tbodyC.querySelector('textarea[data-f="lavoro"]');if(f)f.focus()});
-function deadlineStatus(p){const d=daysUntil(p.scadenza);if(d===null)return{label:'—',cls:'normal'};if(d<0)return{label:`Scaduta ${Math.abs(d)} gg`,cls:'overdue'};if(d===0)return{label:'Oggi',cls:'soon'};if(d<=7)return{label:`${d} gg`,cls:'soon'};return{label:`${d} gg`,cls:'normal'}}function sortedDeadlines(){return pratiche.filter(p=>!p.fatta&&p.scadenza).slice().sort((a,b)=>a.scadenza.localeCompare(b.scadenza))}
-function openManager(id){managerPracticeId=id;renderManager();goTo('gestione')}function openPracticeContext(id){const p=pratiche.find(x=>x.id===id);if(!p)return;if(p.fatta){goTo('archivio');setOpenPractice(id)}else openManager(id)}
-function renderDashboard(){const host=$('dashboard-deadlines'),list=sortedDeadlines().slice(0,10);$('dashboard-count').textContent=list.length?`${list.length} visualizzate`:'Nessuna scadenza';if(!list.length){host.innerHTML='<div class="manager-empty">Nessuna scadenza inserita nelle pratiche attive.</div>';return}host.innerHTML=list.map(p=>{const s=deadlineStatus(p);return`<div class="deadline-item" data-open-practice="${p.id}"><div class="deadline-date">${formatDate(p.scadenza)}</div><div class="deadline-client">${esc(p.cliente||'Senza cliente')}</div><div class="deadline-practice">${esc(p.pratica||'Pratica senza titolo')} · ${esc([p.comune,p.via].filter(Boolean).join(' — '))}</div><div class="deadline-status ${s.cls}">${s.label}</div></div>`}).join('');host.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)))}
-function renderScadenze(){const tb=$('tbody-scadenze'),list=sortedDeadlines();if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessuna scadenza inserita.</td></tr>';return}tb.innerHTML=list.map(p=>{const s=deadlineStatus(p);return`<tr class="link-row" data-open-practice="${p.id}"><td class="mono">${formatDate(p.scadenza)}</td><td><strong>${esc(p.cliente||'—')}</strong></td><td>${esc(p.pratica||'—')}</td><td class="muted">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</td><td><span class="deadline-status ${s.cls}">${s.label}</span></td></tr>`}).join('');tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)))}
-function renderClienti(){const map=new Map();pratiche.forEach(p=>{const name=(p.cliente||'').trim();if(!name)return;if(!map.has(name))map.set(name,{name,active:0,arch:0,last:null});const c=map.get(name);p.fatta?c.arch++:c.active++;c.last=p});const list=[...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'));const tb=$('tbody-clienti');if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessun cliente inserito.</td></tr>';return}tb.innerHTML=list.map(c=>`<tr><td><strong>${esc(c.name)}</strong></td><td class="mono">${c.active}</td><td class="mono">${c.arch}</td><td class="muted">${esc([c.last?.comune,c.last?.via].filter(Boolean).join(' · ')||'—')}</td><td><button class="btn" data-client-open="${esc(c.name)}">Apri</button></td></tr>`).join('');tb.querySelectorAll('[data-client-open]').forEach(b=>b.addEventListener('click',()=>{const p=pratiche.find(x=>x.cliente===b.dataset.clientOpen&&!x.fatta)||pratiche.find(x=>x.cliente===b.dataset.clientOpen);if(p)openPracticeContext(p.id)}))}
-function renderContabilita(){let parcelle=0,acconti=0,anticipi=0,da=0;pratiche.forEach(p=>{parcelle+=moneyNumber(p.parcellaGeometra);acconti+=moneyNumber(p.accontoCliente);anticipi+=moneyNumber(p.anticipo);if(p.statoPagamento!=='Pagato')da+=Math.max(0,moneyNumber(p.parcellaGeometra)+moneyNumber(p.anticipo)-moneyNumber(p.accontoCliente))});$('kpi-parcelle').textContent=euro(parcelle);$('kpi-acconti').textContent=euro(acconti);$('kpi-anticipi').textContent=euro(anticipi);$('kpi-da-incassare').textContent=euro(da);const tb=$('tbody-contabilita');if(!pratiche.length){tb.innerHTML='<tr class="empty-row"><td colspan="6">Nessuna pratica.</td></tr>';return}tb.innerHTML=pratiche.map(p=>`<tr class="link-row" data-open-practice="${p.id}"><td><strong>${esc(p.cliente||'—')}</strong></td><td>${esc(p.pratica||'—')}</td><td class="mono">${euro(moneyNumber(p.parcellaGeometra))}</td><td class="mono">${euro(moneyNumber(p.accontoCliente))}</td><td class="mono">${euro(moneyNumber(p.anticipo))}</td><td><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></td></tr>`).join('');tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)))}
-function baseChecklistItems(){return['Incarico / documentazione cliente','Rilievo / verifica stato di fatto','Elaborati e documentazione tecnica','Presentazione / invio pratica','Protocollo / ricevuta','Chiusura pratica'].map(text=>({id:uid(),text,done:false,due:''}))}
-function renderManagerSelect(){const sel=$('practice-manager-select'),att=pratiche.filter(p=>!p.fatta);const previous=managerPracticeId;sel.innerHTML='<option value="">Seleziona una pratica...</option>'+att.map(p=>`<option value="${p.id}">${esc((p.cliente||'Senza cliente')+' — '+(p.pratica||'Pratica')+(p.comune?' — '+p.comune:''))}</option>`).join('');if(att.some(p=>p.id===previous))sel.value=previous;else{managerPracticeId='';sel.value=''}}
-function renderManager(){renderManagerSelect();const body=$('manager-body'),p=pratiche.find(x=>x.id===managerPracticeId&&!x.fatta);if(!p){body.innerHTML='<div class="manager-empty">Seleziona una pratica attiva per aprire la checklist.</div>';return}const done=p.checklist.filter(i=>i.done).length,total=p.checklist.length;body.innerHTML=`<div class="manager-summary"><div class="summary-cell"><div class="label">Cliente</div><div class="value">${esc(p.cliente||'—')}</div></div><div class="summary-cell"><div class="label">Pratica</div><div class="value">${esc(p.pratica||'—')}</div></div><div class="summary-cell"><div class="label">Indirizzo</div><div class="value">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div></div><div class="summary-cell"><div class="label">Scadenza</div><div class="value mono">${formatDate(p.scadenza)}</div></div></div><div class="check-head"><div><strong>Checklist</strong><div class="check-progress">${done}/${total} completate</div></div></div><div class="check-list" id="check-list">${total?p.checklist.map(i=>`<div class="check-item ${i.done?'done':''}" data-check-id="${i.id}"><input type="checkbox" data-check-f="done" ${i.done?'checked':''}><input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Attività"><input type="date" data-check-f="due" value="${esc(i.due)}"><button class="del-btn" data-check-del="1">✕</button></div>`).join(''):'<div class="check-empty">Checklist vuota. Aggiungi una voce o usa “Checklist base”.</div>'}</div>`;const list=$('check-list');list.addEventListener('input',handleChecklistInput);list.addEventListener('change',handleChecklistChange);list.addEventListener('click',handleChecklistClick)}
-function currentManagerPractice(){return pratiche.find(p=>p.id===managerPracticeId&&!p.fatta)}function handleChecklistInput(e){const p=currentManagerPractice();if(!p)return;const row=e.target.closest('[data-check-id]'),item=p.checklist.find(i=>i.id===row?.dataset.checkId);if(item&&e.target.dataset.checkF==='text')item.text=e.target.value}function handleChecklistChange(e){const p=currentManagerPractice();if(!p)return;const row=e.target.closest('[data-check-id]'),item=p.checklist.find(i=>i.id===row?.dataset.checkId);if(!item)return;const f=e.target.dataset.checkF;if(f==='done')item.done=e.target.checked;else if(f)item[f]=e.target.value;save('pratiche-data',pratiche,statusP);renderManager()}function handleChecklistClick(e){if(!e.target.dataset.checkDel)return;const p=currentManagerPractice(),row=e.target.closest('[data-check-id]');if(!p||!row)return;p.checklist=p.checklist.filter(i=>i.id!==row.dataset.checkId);save('pratiche-data',pratiche,statusP);renderManager()}
-$('practice-manager-select').addEventListener('change',e=>{managerPracticeId=e.target.value;renderManager()});$('add-check-item').addEventListener('click',()=>{const p=currentManagerPractice();if(!p)return;p.checklist.push({id:uid(),text:'',done:false,due:''});save('pratiche-data',pratiche,statusP);renderManager();const inputs=document.querySelectorAll('#check-list input[data-check-f="text"]');if(inputs.length)inputs[inputs.length-1].focus()});$('base-checklist').addEventListener('click',()=>{const p=currentManagerPractice();if(!p)return;if(!p.checklist.length)p.checklist=baseChecklistItems();else return;save('pratiche-data',pratiche,statusP);renderManager()});
-function renderDerived(){renderDashboard();renderScadenze();renderClienti();renderContabilita();renderManager()}
-window.addEventListener('cloud-storage-change',event=>{try{const d=event.detail||{};if(d.key==='pratiche-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizePratica);if(JSON.stringify(incoming)!==JSON.stringify(pratiche)){pratiche=incoming;renderPratiche();renderDerived()}statusP.textContent=statusPA.textContent='sincronizzato'}}else if(d.key==='candidature-data'){const parsed=JSON.parse(d.value||'[]');if(Array.isArray(parsed)){const incoming=parsed.map(normalizeCandidatura);if(JSON.stringify(incoming)!==JSON.stringify(candidature)){candidature=incoming;renderCandidature()}statusC.textContent=statusCA.textContent='sincronizzato'}}}catch(e){console.warn('Aggiornamento cloud non applicato',e)}});
+
+const S=window.storage;
+let pratiche=[],candidature=[],openPracticeId=null,managerPracticeId='';
+
+const $=id=>document.getElementById(id);
+const tbodyP=$('tbody-pratiche'),tbodyPA=$('tbody-pratiche-archiviate'),
+      tbodyC=$('tbody-candidature'),tbodyCA=$('tbody-candidature-archiviate'),
+      statusP=$('status-pratiche'),statusPA=$('status-pratiche-archiviate'),
+      statusC=$('status-candidature'),statusCA=$('status-candidature-archiviate');
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(s){if(s===undefined||s===null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function daysUntil(dateStr){if(!dateStr)return null;const today=new Date();today.setHours(0,0,0,0);const d=new Date(dateStr+'T00:00:00');return Math.round((d-today)/86400000)}
+function addYears(dateStr,years){if(!dateStr||!years)return'';const a=dateStr.split('-').map(Number);if(a.length!==3||a.some(isNaN))return'';const[y,m,d]=a,ty=y+Number(years),last=new Date(ty,m,0).getDate();return`${ty}-${String(m).padStart(2,'0')}-${String(Math.min(d,last)).padStart(2,'0')}`}
+function formatDate(s){if(!s)return'—';const p=s.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s}
+function nowDate(){return new Date().toISOString().slice(0,10)}
+
+async function save(key,data,statusEl){
+  try{
+    const ok=await S.set(key,JSON.stringify(data));
+    if(statusEl)statusEl.textContent=ok?'salvato · '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'errore salvataggio';
+  }catch(e){if(statusEl)statusEl.textContent='errore salvataggio';console.error(e)}
+}
+async function load(key){try{const r=await S.get(key);return r&&r.value?JSON.parse(r.value):[]}catch(e){return[]}}
+
+function normalizeChecklist(list){
+  return Array.isArray(list)?list.map(i=>({
+    id:i.id||uid(),text:i.text||'',done:!!i.done,due:i.due||'',completedAt:i.completedAt||''
+  })):[];
+}
+function normalizePratica(p){
+  let stato=p.statoPagamento;
+  if(!stato)stato=p.pagato?'Pagato':'Da saldare';
+  if(!['Da saldare','Acconto','Pagato'].includes(stato))stato='Da saldare';
+  return{
+    id:p.id||uid(),
+    cliente:p.cliente||'',
+    comune:p.comune||'',
+    via:p.via!==undefined?p.via:(p.sito||''),
+    pratica:p.pratica||'',
+    priorita:p.priorita||'Media',
+    presentata:p.presentata||'',
+    durataScadenza:p.durataScadenza||'',
+    scadenza:p.scadenza||'',
+    // Campi economici vecchi mantenuti nei dati per non perdere informazioni,
+    // ma non vengono più mostrati nel gestionale.
+    anticipo:p.anticipo||'',
+    accontoCliente:p.accontoCliente||'',
+    parcellaGeometra:p.parcellaGeometra||'',
+    statoPagamento:stato,
+    note:p.note||'',
+    fatta:!!p.fatta,
+    checklist:normalizeChecklist(p.checklist)
+  };
+}
+function normalizeCandidatura(c){
+  return{id:c.id||uid(),lavoro:c.lavoro||'',data:c.data||'',posto:c.posto||'',proposta:c.proposta||'',note:c.note||'',archiviata:!!c.archiviata};
+}
+function colorizePriority(sel){
+  const map={Alta:'var(--red)',Media:'var(--amber)',Bassa:'var(--green)'};
+  sel.style.color=map[sel.value]||'';
+}
+function payClass(s){return s==='Pagato'?'paid':s==='Acconto'?'deposit':'unpaid'}
+
+function goTo(view){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.nav===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.dataset.view===view));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>goTo(b.dataset.nav)));
+
+function rowPratica(p,index){
+  const frag=document.createDocumentFragment(),tr=document.createElement('tr');
+  tr.dataset.id=p.id;tr.className='practice-main-row';
+  const scad=daysUntil(p.scadenza);let side='';
+  if(!p.fatta&&scad!==null){if(scad<0)side='overdue';else if(scad<=7)side='soon'}
+
+  tr.innerHTML=`
+    <td class="num-col">
+      <div class="rownum-wrap">
+        <div class="rownum">${index+1}</div>
+        <div class="reorder-controls">
+          <button class="move-btn" type="button" tabindex="-1" data-action="moveUp">↑</button>
+          <button class="move-btn" type="button" tabindex="-1" data-action="moveDown">↓</button>
+        </div>
+      </div>
+    </td>
+    <td class="side ${side}">
+      <div class="client-wrap" data-action="openDetails">
+        <input class="archive-check" type="checkbox" tabindex="-1" data-action="toggleArchive" ${p.fatta?'checked':''}>
+        <textarea data-f="cliente" placeholder="Nome cliente">${esc(p.cliente)}</textarea>
+      </div>
+    </td>
+    <td data-action="openDetails"><input type="text" data-f="comune" value="${esc(p.comune)}" placeholder="Comune"></td>
+    <td data-action="openDetails"><textarea data-f="via" placeholder="Via / indirizzo">${esc(p.via)}</textarea></td>
+    <td>
+      <div class="practice-open" data-action="openDetails">
+        <textarea data-f="pratica" placeholder="Tipo pratica">${esc(p.pratica)}</textarea>
+        <button class="practice-chevron" type="button" tabindex="-1" data-action="toggleDetails">${openPracticeId===p.id?'▴':'▾'}</button>
+      </div>
+    </td>
+    <td>
+      <select data-f="priorita" class="priority-select">
+        <option value="Bassa" ${p.priorita==='Bassa'?'selected':''}>Bassa</option>
+        <option value="Media" ${p.priorita==='Media'?'selected':''}>Media</option>
+        <option value="Alta" ${p.priorita==='Alta'?'selected':''}>Alta</option>
+      </select>
+    </td>
+    <td><button class="del-btn" tabindex="-1" data-action="del">✕</button></td>`;
+  colorizePriority(tr.querySelector('.priority-select'));
+
+  const details=document.createElement('tr');
+  details.dataset.id=p.id;
+  details.className='notes-detail'+(openPracticeId===p.id?' open':'');
+  details.innerHTML=`
+    <td colspan="7">
+      <div class="details-panel">
+        <button class="detail-close-btn" type="button" data-action="closeDetails">▲</button>
+        <div class="details-layout">
+          <div class="details-notes">
+            <div class="details-title">Note</div>
+            <textarea data-f="note" placeholder="Note della pratica...">${esc(p.note)}</textarea>
+          </div>
+          <div class="details-right">
+            <div class="detail-box">
+              <div class="details-title">Presentata / Scadenza</div>
+              <div class="date-stack">
+                <div class="date-row">
+                  <span class="field-label">Presentata</span>
+                  <input type="date" data-f="presentata" value="${esc(p.presentata)}">
+                </div>
+                <div class="deadline-row">
+                  <span class="field-label">Scadenza</span>
+                  <select data-f="durataScadenza">
+                    <option value="" ${!p.durataScadenza?'selected':''}>Manuale</option>
+                    <option value="1" ${String(p.durataScadenza)==='1'?'selected':''}>1 anno</option>
+                    <option value="2" ${String(p.durataScadenza)==='2'?'selected':''}>2 anni</option>
+                    <option value="3" ${String(p.durataScadenza)==='3'?'selected':''}>3 anni</option>
+                  </select>
+                  <input type="date" data-f="scadenza" value="${esc(p.scadenza)}">
+                </div>
+              </div>
+            </div>
+            <div class="detail-box">
+              <div class="details-title">Pagamento</div>
+              <select data-f="statoPagamento" class="pay-select ${payClass(p.statoPagamento)}">
+                <option value="Da saldare" ${p.statoPagamento==='Da saldare'?'selected':''}>Da saldare</option>
+                <option value="Acconto" ${p.statoPagamento==='Acconto'?'selected':''}>Acconto</option>
+                <option value="Pagato" ${p.statoPagamento==='Pagato'?'selected':''}>Pagato</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </td>`;
+  frag.append(tr,details);
+  return frag;
+}
+
+function renderPratiche(){
+  tbodyP.innerHTML='';tbodyPA.innerHTML='';
+  const att=pratiche.filter(p=>!p.fatta),arc=pratiche.filter(p=>p.fatta);
+  if(!att.length)tbodyP.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica attiva.</td></tr>';
+  else att.forEach((p,i)=>tbodyP.appendChild(rowPratica(p,i)));
+  if(!arc.length)tbodyPA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna pratica archiviata.</td></tr>';
+  else arc.forEach((p,i)=>tbodyPA.appendChild(rowPratica(p,i)));
+}
+function updateDeadlineVisual(tr,item){
+  const cell=tr.children[1];cell.classList.remove('overdue','soon');if(item.fatta)return;
+  const d=daysUntil(item.scadenza);if(d!==null){if(d<0)cell.classList.add('overdue');else if(d<=7)cell.classList.add('soon')}
+}
+function handlePInput(e){
+  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
+  const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
+  const f=e.target.dataset.f;if(!f)return;
+  item[f]=e.target.value;
+  if(f==='priorita')colorizePriority(e.target);
+  if(f==='statoPagamento')e.target.className='pay-select '+payClass(item.statoPagamento);
+  if((f==='presentata'||f==='durataScadenza')&&item.durataScadenza&&item.presentata){
+    item.scadenza=addYears(item.presentata,item.durataScadenza);
+    const sc=tr.querySelector('[data-f="scadenza"]');if(sc)sc.value=item.scadenza;
+  }
+  if(['scadenza','presentata','durataScadenza'].includes(f))updateDeadlineVisual(tr,item);
+}
+function handlePChange(e){
+  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
+  const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
+  if(e.target.dataset.action==='toggleArchive'){
+    if(openPracticeId===item.id)openPracticeId=null;
+    item.fatta=e.target.checked;
+    if(item.fatta&&managerPracticeId===item.id)managerPracticeId='';
+    renderPratiche();
+  }
+  if(e.target.dataset.f==='statoPagamento'){
+    item.statoPagamento=e.target.value;
+    e.target.className='pay-select '+payClass(item.statoPagamento);
+  }
+  save('pratiche-data',pratiche,item.fatta?statusPA:statusP);
+  renderDerived();
+}
+function practiceGroup(item){return pratiche.filter(p=>p.fatta===item.fatta)}
+function movePractice(id,action){
+  const item=pratiche.find(p=>p.id===id);if(!item)return;
+  const group=practiceGroup(item),gi=group.findIndex(p=>p.id===id);let target=null;
+  if(action==='moveUp'&&gi>0)target=group[gi-1];
+  if(action==='moveDown'&&gi<group.length-1)target=group[gi+1];
+  if(target){
+    const a=pratiche.findIndex(p=>p.id===item.id),b=pratiche.findIndex(p=>p.id===target.id);
+    [pratiche[a],pratiche[b]]=[pratiche[b],pratiche[a]];
+  }
+}
+function setOpenPractice(id){
+  openPracticeId=id||null;
+  [tbodyP,tbodyPA].forEach(tb=>tb.querySelectorAll('.practice-main-row').forEach(main=>{
+    const detail=main.nextElementSibling,isOpen=main.dataset.id===openPracticeId;
+    if(detail&&detail.classList.contains('notes-detail'))detail.classList.toggle('open',isOpen);
+    const b=main.querySelector('.practice-chevron');if(b)b.textContent=isOpen?'▴':'▾';
+  }));
+}
+function handlePClick(e){
+  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
+  const item=pratiche.find(x=>x.id===tr.dataset.id);if(!item)return;
+  const a=(e.target.closest('[data-action]')||{}).dataset?.action||'';
+  if(a==='del'){
+    pratiche=pratiche.filter(x=>x.id!==item.id);
+    if(managerPracticeId===item.id)managerPracticeId='';
+    renderPratiche();renderDerived();save('pratiche-data',pratiche,item.fatta?statusPA:statusP);
+  }else if(['moveUp','moveDown'].includes(a)){
+    movePractice(item.id,a);renderPratiche();renderDerived();save('pratiche-data',pratiche,item.fatta?statusPA:statusP);
+  }else if(a==='closeDetails')setOpenPractice(null);
+  else if(a==='toggleDetails')setOpenPractice(openPracticeId===item.id?null:item.id);
+  else if(a==='openDetails'&&openPracticeId!==item.id)setOpenPractice(item.id);
+}
+[tbodyP,tbodyPA].forEach(tb=>{
+  tb.addEventListener('input',handlePInput);
+  tb.addEventListener('change',handlePChange);
+  tb.addEventListener('click',handlePClick);
+});
+$('add-pratica').addEventListener('click',()=>{
+  const p={
+    id:uid(),cliente:'',comune:'',via:'',pratica:'',priorita:'Media',
+    presentata:'',durataScadenza:'',scadenza:'',
+    anticipo:'',accontoCliente:'',parcellaGeometra:'',
+    statoPagamento:'Da saldare',note:'',fatta:false,checklist:[]
+  };
+  pratiche.push(p);renderPratiche();renderDerived();save('pratiche-data',pratiche,statusP);
+  const els=tbodyP.querySelectorAll('textarea[data-f="cliente"]');if(els.length)els[els.length-1].focus();
+});
+
+function rowCandidatura(c,index){
+  const tr=document.createElement('tr');tr.dataset.id=c.id;
+  tr.innerHTML=`
+    <td class="num-col"><div class="rownum">${index+1}</div></td>
+    <td><div class="client-wrap"><input class="archive-check" type="checkbox" data-action="toggleArchive" ${c.archiviata?'checked':''}><textarea data-f="lavoro" placeholder="Nome lavoro / ente">${esc(c.lavoro)}</textarea></div></td>
+    <td><input type="date" data-f="data" value="${esc(c.data)}"></td>
+    <td><textarea data-f="posto" placeholder="Città / luogo">${esc(c.posto)}</textarea></td>
+    <td><textarea data-f="note" placeholder="Note...">${esc(c.note)}</textarea></td>
+    <td><div class="money-wrap"><input type="number" data-f="proposta" value="${esc(c.proposta)}" step="0.01"><span class="money-suffix">€</span></div></td>
+    <td><button class="del-btn" data-action="del">✕</button></td>`;
+  return tr;
+}
+function renderCandidature(){
+  tbodyC.innerHTML='';tbodyCA.innerHTML='';
+  const att=candidature.filter(c=>!c.archiviata),arc=candidature.filter(c=>c.archiviata);
+  if(!att.length)tbodyC.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura attiva.</td></tr>';
+  else att.forEach((c,i)=>tbodyC.appendChild(rowCandidatura(c,i)));
+  if(!arc.length)tbodyCA.innerHTML='<tr class="empty-row"><td colspan="7">Nessuna candidatura archiviata.</td></tr>';
+  else arc.forEach((c,i)=>tbodyCA.appendChild(rowCandidatura(c,i)));
+}
+function handleCInput(e){
+  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
+  const item=candidature.find(x=>x.id===tr.dataset.id);
+  if(item&&e.target.dataset.f)item[e.target.dataset.f]=e.target.value;
+}
+function handleCChange(e){
+  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
+  const item=candidature.find(x=>x.id===tr.dataset.id);if(!item)return;
+  if(e.target.dataset.action==='toggleArchive'){item.archiviata=e.target.checked;renderCandidature()}
+  save('candidature-data',candidature,item.archiviata?statusCA:statusC);
+}
+function handleCClick(e){
+  const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;
+  if(e.target.dataset.action==='del'){
+    const item=candidature.find(x=>x.id===tr.dataset.id);
+    candidature=candidature.filter(x=>x.id!==tr.dataset.id);
+    renderCandidature();save('candidature-data',candidature,item&&item.archiviata?statusCA:statusC);
+  }
+}
+[tbodyC,tbodyCA].forEach(tb=>{
+  tb.addEventListener('input',handleCInput);
+  tb.addEventListener('change',handleCChange);
+  tb.addEventListener('click',handleCClick);
+});
+$('add-candidatura').addEventListener('click',()=>{
+  candidature.unshift({id:uid(),lavoro:'',data:'',posto:'',proposta:'',note:'',archiviata:false});
+  renderCandidature();save('candidature-data',candidature,statusC);
+  const f=tbodyC.querySelector('textarea[data-f="lavoro"]');if(f)f.focus();
+});
+
+function deadlineStatus(p){
+  const d=daysUntil(p.scadenza);
+  if(d===null)return{label:'—',cls:'normal'};
+  if(d<0)return{label:`Scaduta ${Math.abs(d)} gg`,cls:'overdue'};
+  if(d===0)return{label:'Oggi',cls:'soon'};
+  if(d<=7)return{label:`${d} gg`,cls:'soon'};
+  return{label:`${d} gg`,cls:'normal'};
+}
+function sortedDeadlines(){
+  return pratiche.filter(p=>!p.fatta&&p.scadenza).slice().sort((a,b)=>a.scadenza.localeCompare(b.scadenza));
+}
+function openManager(id){
+  managerPracticeId=id;
+  renderManager();
+  goTo('gestione');
+}
+function openPracticeContext(id){
+  const p=pratiche.find(x=>x.id===id);if(!p)return;
+  if(p.fatta){goTo('archivio');setOpenPractice(id)}
+  else openManager(id);
+}
+
+function renderDashboardPractices(){
+  const host=$('dashboard-practices');
+  const active=pratiche.filter(p=>!p.fatta);
+  $('dashboard-practice-count').textContent=active.length===1?'1 pratica attiva':`${active.length} pratiche attive`;
+  if(!active.length){
+    host.innerHTML='<div class="manager-empty">Nessuna pratica attiva.</div>';
+    return;
+  }
+  const groups=[
+    {key:'Alta',label:'Priorità alta',cls:'high'},
+    {key:'Media',label:'Priorità media',cls:'medium'},
+    {key:'Bassa',label:'Priorità bassa',cls:'low'}
+  ];
+  host.innerHTML=groups.map(g=>{
+    const items=active.filter(p=>p.priorita===g.key);
+    if(!items.length)return'';
+    return `<div class="priority-group">
+      <div class="priority-group-title">
+        <span class="priority-name ${g.cls}">${g.label}</span>
+        <span>${items.length}</span>
+      </div>
+      ${items.map(p=>`
+        <div class="dashboard-practice-row">
+          <div class="dash-client">${esc(p.cliente||'Senza cliente')}</div>
+          <div class="dash-practice">${esc(p.pratica||'Pratica senza titolo')}</div>
+          <div class="dash-address">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div>
+          <div class="dash-payment"><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></div>
+          <div class="dash-open"><button class="btn" type="button" data-dashboard-open="${p.id}">Apri</button></div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+  host.querySelectorAll('[data-dashboard-open]').forEach(b=>b.addEventListener('click',()=>openManager(b.dataset.dashboardOpen)));
+}
+
+function renderDashboardDeadlines(){
+  const host=$('dashboard-deadlines'),list=sortedDeadlines().slice(0,10);
+  $('dashboard-count').textContent=list.length?`${list.length} visualizzate`:'Nessuna scadenza';
+  if(!list.length){
+    host.innerHTML='<div class="manager-empty">Nessuna scadenza inserita nelle pratiche attive.</div>';
+    return;
+  }
+  host.innerHTML=list.map(p=>{
+    const s=deadlineStatus(p);
+    return `<div class="deadline-item">
+      <div class="deadline-date">${formatDate(p.scadenza)}</div>
+      <div class="deadline-client">${esc(p.cliente||'Senza cliente')}</div>
+      <div class="deadline-practice">${esc(p.pratica||'Pratica senza titolo')} · ${esc([p.comune,p.via].filter(Boolean).join(' — '))}</div>
+      <div class="deadline-status ${s.cls}">${s.label}</div>
+    </div>`;
+  }).join('');
+}
+function renderDashboard(){renderDashboardPractices();renderDashboardDeadlines()}
+
+function renderScadenze(){
+  const tb=$('tbody-scadenze'),list=sortedDeadlines();
+  if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessuna scadenza inserita.</td></tr>';return}
+  tb.innerHTML=list.map(p=>{
+    const s=deadlineStatus(p);
+    return `<tr class="link-row" data-open-practice="${p.id}">
+      <td class="mono">${formatDate(p.scadenza)}</td>
+      <td><strong>${esc(p.cliente||'—')}</strong></td>
+      <td>${esc(p.pratica||'—')}</td>
+      <td class="muted">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</td>
+      <td><span class="deadline-status ${s.cls}">${s.label}</span></td>
+    </tr>`;
+  }).join('');
+  tb.querySelectorAll('[data-open-practice]').forEach(el=>el.addEventListener('click',()=>openPracticeContext(el.dataset.openPractice)));
+}
+
+function getClientList(){
+  const map=new Map();
+  pratiche.forEach(p=>{
+    const name=(p.cliente||'').trim();if(!name)return;
+    const key=name.toLocaleLowerCase('it');
+    if(!map.has(key))map.set(key,{name,active:0,arch:0,last:null,practices:[]});
+    const c=map.get(key);
+    p.fatta?c.arch++:c.active++;
+    c.last=p;c.practices.push(p);
+  });
+  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'it'));
+}
+function renderClienti(){
+  const q=($('client-search').value||'').trim().toLocaleLowerCase('it');
+  const filter=$('client-filter').value;
+  let list=getClientList();
+  if(q)list=list.filter(c=>c.name.toLocaleLowerCase('it').includes(q));
+  if(filter==='active')list=list.filter(c=>c.active>0);
+  if(filter==='archived')list=list.filter(c=>c.active===0&&c.arch>0);
+
+  $('clienti-count').textContent=list.length===1?'1 cliente':`${list.length} clienti`;
+  const tb=$('tbody-clienti');
+  if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nessun cliente corrisponde alla ricerca.</td></tr>';return}
+  tb.innerHTML=list.map(c=>`<tr>
+    <td><strong>${esc(c.name)}</strong></td>
+    <td class="mono">${c.active}</td>
+    <td class="mono">${c.arch}</td>
+    <td class="muted">${esc([c.last?.comune,c.last?.via].filter(Boolean).join(' · ')||'—')}</td>
+    <td><button class="btn" data-client-open="${esc(c.name)}">Apri</button></td>
+  </tr>`).join('');
+  tb.querySelectorAll('[data-client-open]').forEach(b=>b.addEventListener('click',()=>{
+    const name=b.dataset.clientOpen;
+    const p=pratiche.find(x=>x.cliente===name&&!x.fatta)||pratiche.find(x=>x.cliente===name);
+    if(p)openPracticeContext(p.id);
+  }));
+}
+$('client-search').addEventListener('input',renderClienti);
+$('client-filter').addEventListener('change',renderClienti);
+
+function baseChecklistItems(){
+  return[
+    'Incarico / documentazione cliente',
+    'Rilievo / verifica stato di fatto',
+    'Elaborati e documentazione tecnica',
+    'Presentazione / invio pratica',
+    'Protocollo / ricevuta',
+    'Chiusura pratica'
+  ].map(text=>({id:uid(),text,done:false,due:'',completedAt:''}));
+}
+function renderManagerSelect(){
+  const sel=$('practice-manager-select'),att=pratiche.filter(p=>!p.fatta),previous=managerPracticeId;
+  sel.innerHTML='<option value="">Seleziona una pratica...</option>'+
+    att.map(p=>`<option value="${p.id}">${esc((p.cliente||'Senza cliente')+' — '+(p.pratica||'Pratica')+(p.comune?' — '+p.comune:''))}</option>`).join('');
+  if(att.some(p=>p.id===previous))sel.value=previous;
+  else{managerPracticeId='';sel.value=''}
+}
+function buildTimeline(p){
+  const events=[];
+  if(p.presentata)events.push({date:p.presentata,text:'Pratica presentata'});
+  p.checklist.forEach(i=>{
+    if(i.done)events.push({
+      date:i.completedAt||i.due||'',
+      text:`Completato: ${i.text||'Attività checklist'}`
+    });
+  });
+  return events.sort((a,b)=>{
+    if(!a.date&&!b.date)return 0;
+    if(!a.date)return 1;if(!b.date)return-1;
+    return b.date.localeCompare(a.date);
+  });
+}
+function renderManager(){
+  renderManagerSelect();
+  const body=$('manager-body'),p=pratiche.find(x=>x.id===managerPracticeId&&!x.fatta);
+  if(!p){body.innerHTML='<div class="manager-empty">Seleziona una pratica attiva per aprirla.</div>';return}
+  const done=p.checklist.filter(i=>i.done).length,total=p.checklist.length,timeline=buildTimeline(p);
+
+  body.innerHTML=`
+    <div class="manager-summary">
+      <div class="summary-cell"><div class="label">Cliente</div><div class="value">${esc(p.cliente||'—')}</div></div>
+      <div class="summary-cell"><div class="label">Pratica</div><div class="value">${esc(p.pratica||'—')}</div></div>
+      <div class="summary-cell"><div class="label">Indirizzo</div><div class="value">${esc([p.comune,p.via].filter(Boolean).join(' · ')||'—')}</div></div>
+      <div class="summary-cell"><div class="label">Scadenza</div><div class="value mono">${formatDate(p.scadenza)}</div></div>
+      <div class="summary-cell"><div class="label">Pagamento</div><div class="value"><span class="status-chip ${payClass(p.statoPagamento)}">${esc(p.statoPagamento)}</span></div></div>
+    </div>
+
+    <div class="manager-columns">
+      <div class="manager-main">
+        <div class="check-head">
+          <div><strong>Checklist</strong><div class="check-progress">${done}/${total} completate</div></div>
+        </div>
+        <div class="check-list" id="check-list">
+          ${total?p.checklist.map(i=>`
+            <div class="check-item ${i.done?'done':''}" data-check-id="${i.id}">
+              <input type="checkbox" data-check-f="done" ${i.done?'checked':''}>
+              <input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Attività">
+              <input type="date" data-check-f="due" value="${esc(i.due)}">
+              <button class="del-btn" data-check-del="1">✕</button>
+            </div>`).join(''):'<div class="check-empty">Checklist vuota. Aggiungi una voce o usa “Checklist base”.</div>'}
+        </div>
+      </div>
+      <div class="manager-side">
+        <h3 class="manager-section-title">Note pratica</h3>
+        <textarea class="manager-notes" id="manager-notes" placeholder="Note della pratica...">${esc(p.note)}</textarea>
+
+        <h3 class="manager-section-title">Storia pratica</h3>
+        <div class="timeline">
+          ${timeline.length?timeline.map(e=>`
+            <div class="timeline-item">
+              <div class="timeline-date">${e.date?formatDate(e.date):'—'}</div>
+              <div class="timeline-text">${esc(e.text)}</div>
+            </div>`).join(''):'<div class="timeline-empty">La storia si compila con presentazione e attività completate.</div>'}
+        </div>
+      </div>
+    </div>`;
+
+  const list=$('check-list');
+  list.addEventListener('input',handleChecklistInput);
+  list.addEventListener('change',handleChecklistChange);
+  list.addEventListener('click',handleChecklistClick);
+
+  const notes=$('manager-notes');
+  notes.addEventListener('input',()=>{p.note=notes.value});
+  notes.addEventListener('change',()=>save('pratiche-data',pratiche,statusP));
+}
+function currentManagerPractice(){return pratiche.find(p=>p.id===managerPracticeId&&!p.fatta)}
+function handleChecklistInput(e){
+  const p=currentManagerPractice();if(!p)return;
+  const row=e.target.closest('[data-check-id]'),item=p.checklist.find(i=>i.id===row?.dataset.checkId);
+  if(item&&e.target.dataset.checkF==='text')item.text=e.target.value;
+}
+function handleChecklistChange(e){
+  const p=currentManagerPractice();if(!p)return;
+  const row=e.target.closest('[data-check-id]'),item=p.checklist.find(i=>i.id===row?.dataset.checkId);
+  if(!item)return;
+  const f=e.target.dataset.checkF;
+  if(f==='done'){
+    item.done=e.target.checked;
+    item.completedAt=item.done?(item.completedAt||nowDate()):'';
+  }else if(f)item[f]=e.target.value;
+  save('pratiche-data',pratiche,statusP);
+  renderManager();
+}
+function handleChecklistClick(e){
+  if(!e.target.dataset.checkDel)return;
+  const p=currentManagerPractice(),row=e.target.closest('[data-check-id]');
+  if(!p||!row)return;
+  p.checklist=p.checklist.filter(i=>i.id!==row.dataset.checkId);
+  save('pratiche-data',pratiche,statusP);renderManager();
+}
+$('practice-manager-select').addEventListener('change',e=>{managerPracticeId=e.target.value;renderManager()});
+$('add-check-item').addEventListener('click',()=>{
+  const p=currentManagerPractice();if(!p)return;
+  p.checklist.push({id:uid(),text:'',done:false,due:'',completedAt:''});
+  save('pratiche-data',pratiche,statusP);renderManager();
+  const inputs=document.querySelectorAll('#check-list input[data-check-f="text"]');
+  if(inputs.length)inputs[inputs.length-1].focus();
+});
+$('base-checklist').addEventListener('click',()=>{
+  const p=currentManagerPractice();if(!p||p.checklist.length)return;
+  p.checklist=baseChecklistItems();
+  save('pratiche-data',pratiche,statusP);renderManager();
+});
+
+function renderDerived(){renderDashboard();renderScadenze();renderClienti();renderManager()}
+
+window.addEventListener('cloud-storage-change',event=>{
+  try{
+    const d=event.detail||{};
+    if(d.key==='pratiche-data'){
+      const parsed=JSON.parse(d.value||'[]');
+      if(Array.isArray(parsed)){
+        const incoming=parsed.map(normalizePratica);
+        if(JSON.stringify(incoming)!==JSON.stringify(pratiche)){
+          pratiche=incoming;renderPratiche();renderDerived();
+        }
+        statusP.textContent=statusPA.textContent='sincronizzato';
+      }
+    }else if(d.key==='candidature-data'){
+      const parsed=JSON.parse(d.value||'[]');
+      if(Array.isArray(parsed)){
+        const incoming=parsed.map(normalizeCandidatura);
+        if(JSON.stringify(incoming)!==JSON.stringify(candidature)){
+          candidature=incoming;renderCandidature();
+        }
+        statusC.textContent=statusCA.textContent='sincronizzato';
+      }
+    }
+  }catch(e){console.warn('Aggiornamento cloud non applicato',e)}
+});
+
 $('logoutBtn').addEventListener('click',()=>window.REGISTRO_AUTH&&window.REGISTRO_AUTH.signOut());
-(async function init(){statusP.textContent=statusPA.textContent='caricamento…';statusC.textContent=statusCA.textContent='caricamento…';const p=await load('pratiche-data');pratiche=Array.isArray(p)?p.map(normalizePratica):[];renderPratiche();renderDerived();statusP.textContent=statusPA.textContent=pratiche.length?'caricato':'pronto';const c=await load('candidature-data');candidature=Array.isArray(c)?c.map(normalizeCandidatura):[];renderCandidature();statusC.textContent=statusCA.textContent=candidature.length?'caricato':'pronto'})();
+
+(async function init(){
+  statusP.textContent=statusPA.textContent='caricamento…';
+  statusC.textContent=statusCA.textContent='caricamento…';
+
+  const p=await load('pratiche-data');
+  pratiche=Array.isArray(p)?p.map(normalizePratica):[];
+  renderPratiche();renderDerived();
+  statusP.textContent=statusPA.textContent=pratiche.length?'caricato':'pronto';
+
+  const c=await load('candidature-data');
+  candidature=Array.isArray(c)?c.map(normalizeCandidatura):[];
+  renderCandidature();
+  statusC.textContent=statusCA.textContent=candidature.length?'caricato':'pronto';
+})();
 })();

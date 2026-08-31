@@ -1,22 +1,26 @@
-GESTIONALE REGISTRO LAVORO V4
+GESTIONALE REGISTRO LAVORO V5
 
-Sostituisci nel repository:
+SOSTITUISCI nel repository:
 - index.html
+- gestionale-v4.css
+- gestionale-v4.js
 - sw.js
 
-Aggiungi:
-- gestionale-v4.css
-- auth-v4.js
-- gestionale-v4.js
-
 NON modificare:
+- auth-v4.js
 - firebase-config.js
 - firestore.rules.txt
 - manifest-v3.webmanifest
-- icone
+- le icone
 
-I dati esistenti restano nelle stesse chiavi Firebase:
-- pratiche-data
-- candidature-data
-
-La checklist viene salvata all'interno di ciascuna pratica esistente.
+MODIFICHE:
+- Dashboard: pratiche attive sopra, ordinate Alta / Media / Bassa.
+- Priorità modificabile solo nel Registro Pratiche.
+- Pulsante Apri dalla Dashboard -> Gestione pratica.
+- Gestione pratica: checklist + note + storia pratica.
+- Clienti: ricerca per nome + filtro.
+- Rimossa Contabilità.
+- Rimossi i campi economici dalle pratiche.
+- Resta solo lo stato Pagato / Acconto / Da saldare.
+- Archivio spostato subito prima di Candidature.
+- I vecchi importi NON vengono cancellati da Firebase: semplicemente non vengono più mostrati.

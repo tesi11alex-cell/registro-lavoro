@@ -1,4 +1,4 @@
-const CACHE='registro-lavoro-v9';
+const CACHE='registro-lavoro-v10';
 const APP_SHELL=[
   './',
   './index.html',
@@ -19,9 +19,7 @@ self.addEventListener('install',event=>{
 
 self.addEventListener('activate',event=>{
   event.waitUntil(
-    caches.keys().then(keys=>Promise.all(
-      keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
-    ))
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
   );
   self.clients.claim();
 });

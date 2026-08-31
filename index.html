@@ -16,36 +16,267 @@
 <link rel="stylesheet" href="./gestionale-v4.css">
 </head>
 <body class="auth-pending">
-<div id="loginScreen"><div class="login-card"><div class="login-kicker">Studio Geom. Alessandro Tesi</div><h2>Gestionale</h2><p>Accedi con Google per sincronizzare pratiche, checklist e candidature su tutti i dispositivi.</p><button id="googleLoginBtn" class="google-btn" type="button">Accedi con Google</button><div id="loginError"></div></div></div>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-kicker">Studio Geom. Alessandro Tesi</div>
+    <h2>Gestionale</h2>
+    <p>Accedi con Google per sincronizzare pratiche, checklist e candidature su tutti i dispositivi.</p>
+    <button id="googleLoginBtn" class="google-btn" type="button">Accedi con Google</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
 <script src="./auth-v4.js"></script>
+
 <div class="wrap">
-<header class="top"><div><div class="brand-kicker">Studio Geom. Alessandro Tesi</div><h1>Gestionale lavoro</h1></div><div class="authbar"><span class="cloud-status"><i id="cloudDot" class="cloud-dot"></i><span id="cloudStatus">Sincronizzazione…</span></span><span id="cloudEmail"></span><button class="logout-btn" id="logoutBtn" type="button">Esci</button></div></header>
+<header class="top">
+  <div>
+    <div class="brand-kicker">Studio Geom. Alessandro Tesi</div>
+    <h1>Gestionale lavoro</h1>
+  </div>
+  <div class="authbar">
+    <span class="cloud-status"><i id="cloudDot" class="cloud-dot"></i><span id="cloudStatus">Sincronizzazione…</span></span>
+    <span id="cloudEmail"></span>
+    <button class="logout-btn" id="logoutBtn" type="button">Esci</button>
+  </div>
+</header>
+
 <nav class="app-nav" aria-label="Sezioni gestionale">
-<button class="nav-btn active" data-nav="dashboard" type="button"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg><span>Dashboard</span></button>
-<button class="nav-btn" data-nav="pratiche" type="button"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>Pratiche</span></button>
-<button class="nav-btn" data-nav="archivio" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3zM9 11h6"/></svg><span>Archivio</span></button>
-<button class="nav-btn" data-nav="gestione" type="button"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9l2 2 4-4M8 15h8"/></svg><span>Gestione pratica</span></button>
-<button class="nav-btn" data-nav="scadenze" type="button"><svg viewBox="0 0 24 24"><path d="M5 5h14v15H5zM8 3v4M16 3v4M5 9h14"/><path d="M9 13h2M13 13h2M9 16h2"/></svg><span>Scadenze</span></button>
-<button class="nav-btn" data-nav="clienti" type="button"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M16 7h5M18.5 4.5v5"/></svg><span>Clienti</span></button>
-<button class="nav-btn" data-nav="contabilita" type="button"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5zM8 7h8M8 11h3M13 11h3M8 15h3M13 15h3"/></svg><span>Contabilità</span></button>
-<button class="nav-btn" data-nav="candidature" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM9 7V4h6v3M4 12h16"/></svg><span>Candidature</span></button>
-<button class="nav-btn" data-nav="candidature-archiviate" type="button"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3zM10 12h4"/></svg><span>Archivio candidature</span></button>
+  <button class="nav-btn active" data-nav="dashboard" type="button">
+    <svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg><span>Dashboard</span>
+  </button>
+  <button class="nav-btn" data-nav="pratiche" type="button">
+    <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>Pratiche</span>
+  </button>
+  <button class="nav-btn" data-nav="gestione" type="button">
+    <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9l2 2 4-4M8 15h8"/></svg><span>Gestione pratica</span>
+  </button>
+  <button class="nav-btn" data-nav="scadenze" type="button">
+    <svg viewBox="0 0 24 24"><path d="M5 5h14v15H5zM8 3v4M16 3v4M5 9h14"/><path d="M9 13h2M13 13h2M9 16h2"/></svg><span>Scadenze</span>
+  </button>
+  <button class="nav-btn" data-nav="clienti" type="button">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M16 7h5M18.5 4.5v5"/></svg><span>Clienti</span>
+  </button>
+  <button class="nav-btn" data-nav="archivio" type="button">
+    <svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3zM9 11h6"/></svg><span>Archivio</span>
+  </button>
+  <button class="nav-btn" data-nav="candidature" type="button">
+    <svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM9 7V4h6v3M4 12h16"/></svg><span>Candidature</span>
+  </button>
+  <button class="nav-btn" data-nav="candidature-archiviate" type="button">
+    <svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3zM10 12h4"/></svg><span>Archivio candidature</span>
+  </button>
 </nav>
-<section class="view active" data-view="dashboard"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Prossime scadenze</h2><span class="small-note" id="dashboard-count">—</span></div><div id="dashboard-deadlines" class="dashboard-list"></div></div></section>
-<section class="view" data-view="pratiche"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Registro pratiche attive</h2><button class="btn gold" id="add-pratica" type="button">+ Nuova pratica</button></div><div class="table-scroll"><table class="practice-table"><thead><tr><th class="num-col">N.</th><th class="w-client">Cliente</th><th class="w-comune">Comune</th><th class="w-via">Via</th><th class="w-practice">Pratica</th><th class="w-priority">Priorità</th><th class="w-del"></th></tr></thead><tbody id="tbody-pratiche"></tbody></table></div><div class="panel-foot"><div class="legend"><span><i class="overdue"></i>scaduta</span><span><i class="soon"></i>entro 7 giorni</span></div><span id="status-pratiche">—</span></div></div></section>
-<section class="view" data-view="archivio"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Pratiche archiviate</h2><span class="small-note">Togli il flag per riportare la pratica tra quelle attive</span></div><div class="table-scroll"><table class="practice-table"><thead><tr><th class="num-col">N.</th><th class="w-client">Cliente</th><th class="w-comune">Comune</th><th class="w-via">Via</th><th class="w-practice">Pratica</th><th class="w-priority">Priorità</th><th class="w-del"></th></tr></thead><tbody id="tbody-pratiche-archiviate"></tbody></table></div><div class="panel-foot"><span>Archivio pratiche concluse</span><span id="status-pratiche-archiviate">—</span></div></div></section>
-<section class="view" data-view="gestione"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Gestione pratica</h2><span class="small-note">Checklist collegata alla pratica selezionata</span></div><div class="manager-toolbar"><label><span class="field-label">Seleziona pratica</span><select id="practice-manager-select"><option value="">Seleziona una pratica...</option></select></label><div class="check-actions"><button class="btn" id="base-checklist" type="button">Checklist base</button><button class="btn gold" id="add-check-item" type="button">+ Aggiungi voce</button></div></div><div id="manager-body"><div class="manager-empty">Seleziona una pratica attiva per aprire la checklist.</div></div></div></section>
-<section class="view" data-view="scadenze"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Scadenze pratiche</h2><span class="small-note">Ordinate dalla più vicina</span></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:16%">Scadenza</th><th style="width:24%">Cliente</th><th style="width:28%">Pratica</th><th style="width:20%">Comune / Via</th><th style="width:12%">Stato</th></tr></thead><tbody id="tbody-scadenze"></tbody></table></div></div></section>
-<section class="view" data-view="clienti"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Clienti</h2><span class="small-note">Ricavati automaticamente dalle pratiche</span></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:30%">Cliente</th><th style="width:14%">Pratiche attive</th><th style="width:14%">Archiviate</th><th style="width:32%">Ultimo indirizzo</th><th style="width:10%"></th></tr></thead><tbody id="tbody-clienti"></tbody></table></div></div></section>
-<section class="view" data-view="contabilita"><div class="kpi-grid"><div class="kpi"><div class="k-label">Parcelle</div><div class="k-value" id="kpi-parcelle">0 €</div></div><div class="kpi"><div class="k-label">Acconti ricevuti</div><div class="k-value" id="kpi-acconti">0 €</div></div><div class="kpi"><div class="k-label">Anticipi da recuperare</div><div class="k-value" id="kpi-anticipi">0 €</div></div><div class="kpi"><div class="k-label">Da incassare</div><div class="k-value" id="kpi-da-incassare">0 €</div></div></div><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Contabilità pratiche</h2><span class="small-note">Riepilogo economico del registro</span></div><div class="table-scroll"><table class="derived-table"><thead><tr><th style="width:24%">Cliente</th><th style="width:24%">Pratica</th><th style="width:13%">Parcella</th><th style="width:13%">Acconto</th><th style="width:13%">Anticipi</th><th style="width:13%">Stato</th></tr></thead><tbody id="tbody-contabilita"></tbody></table></div></div></section>
-<section class="view" data-view="candidature"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Candidature di lavoro</h2><button class="btn blue" id="add-candidatura" type="button">+ Nuova candidatura</button></div><div class="table-scroll"><table class="candidature-table"><thead><tr><th class="num-col">N.</th><th style="width:24%">Lavoro / Ente</th><th style="width:14%">Data candidatura</th><th style="width:18%">Posto</th><th style="width:31%">Note</th><th style="width:13%">Proposta economica €</th><th class="w-del"></th></tr></thead><tbody id="tbody-candidature"></tbody></table></div><div class="panel-foot"><span></span><span id="status-candidature">—</span></div></div></section>
-<section class="view" data-view="candidature-archiviate"><div class="panel"><div class="panel-head"><h2><span class="accent-dot"></span>Candidature archiviate</h2><span class="small-note">Togli il flag per riportare la candidatura tra quelle attive</span></div><div class="table-scroll"><table class="candidature-table"><thead><tr><th class="num-col">N.</th><th style="width:24%">Lavoro / Ente</th><th style="width:14%">Data candidatura</th><th style="width:18%">Posto</th><th style="width:31%">Note</th><th style="width:13%">Proposta economica €</th><th class="w-del"></th></tr></thead><tbody id="tbody-candidature-archiviate"></tbody></table></div><div class="panel-foot"><span>Archivio candidature concluse</span><span id="status-candidature-archiviate">—</span></div></div></section>
+
+<section class="view active" data-view="dashboard">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Pratiche attive</h2>
+      <span class="small-note" id="dashboard-practice-count">—</span>
+    </div>
+    <div id="dashboard-practices" class="dashboard-practices"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Prossime scadenze</h2>
+      <span class="small-note" id="dashboard-count">—</span>
+    </div>
+    <div id="dashboard-deadlines" class="dashboard-list"></div>
+  </div>
+</section>
+
+<section class="view" data-view="pratiche">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Registro pratiche attive</h2>
+      <button class="btn gold" id="add-pratica" type="button">+ Nuova pratica</button>
+    </div>
+    <div class="table-scroll">
+      <table class="practice-table">
+        <thead><tr>
+          <th class="num-col">N.</th>
+          <th class="w-client">Cliente</th>
+          <th class="w-comune">Comune</th>
+          <th class="w-via">Via</th>
+          <th class="w-practice">Pratica</th>
+          <th class="w-priority">Priorità</th>
+          <th class="w-del"></th>
+        </tr></thead>
+        <tbody id="tbody-pratiche"></tbody>
+      </table>
+    </div>
+    <div class="panel-foot">
+      <div class="legend"><span><i class="overdue"></i>scaduta</span><span><i class="soon"></i>entro 7 giorni</span></div>
+      <span id="status-pratiche">—</span>
+    </div>
+  </div>
+</section>
+
+<section class="view" data-view="gestione">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Gestione pratica</h2>
+      <span class="small-note">Checklist, note e storia della pratica</span>
+    </div>
+    <div class="manager-toolbar">
+      <label>
+        <span class="field-label">Seleziona pratica</span>
+        <select id="practice-manager-select"><option value="">Seleziona una pratica...</option></select>
+      </label>
+      <div class="check-actions">
+        <button class="btn" id="base-checklist" type="button">Checklist base</button>
+        <button class="btn gold" id="add-check-item" type="button">+ Aggiungi voce</button>
+      </div>
+    </div>
+    <div id="manager-body"><div class="manager-empty">Seleziona una pratica attiva per aprirla.</div></div>
+  </div>
+</section>
+
+<section class="view" data-view="scadenze">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Scadenze pratiche</h2>
+      <span class="small-note">Ordinate dalla più vicina</span>
+    </div>
+    <div class="table-scroll">
+      <table class="derived-table">
+        <thead><tr>
+          <th style="width:16%">Scadenza</th>
+          <th style="width:24%">Cliente</th>
+          <th style="width:28%">Pratica</th>
+          <th style="width:20%">Comune / Via</th>
+          <th style="width:12%">Stato</th>
+        </tr></thead>
+        <tbody id="tbody-scadenze"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="view" data-view="clienti">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Clienti</h2>
+      <span class="small-note" id="clienti-count">—</span>
+    </div>
+    <div class="filter-bar">
+      <label class="search-box">
+        <span class="field-label">Cerca cliente</span>
+        <input id="client-search" type="text" placeholder="Nome cliente...">
+      </label>
+      <label class="filter-box">
+        <span class="field-label">Filtro</span>
+        <select id="client-filter">
+          <option value="all">Tutti</option>
+          <option value="active">Con pratiche attive</option>
+          <option value="archived">Solo archivio</option>
+        </select>
+      </label>
+    </div>
+    <div class="table-scroll">
+      <table class="derived-table">
+        <thead><tr>
+          <th style="width:30%">Cliente</th>
+          <th style="width:14%">Pratiche attive</th>
+          <th style="width:14%">Archiviate</th>
+          <th style="width:32%">Ultimo indirizzo</th>
+          <th style="width:10%"></th>
+        </tr></thead>
+        <tbody id="tbody-clienti"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="view" data-view="archivio">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Pratiche archiviate</h2>
+      <span class="small-note">Togli il flag per riportare la pratica tra quelle attive</span>
+    </div>
+    <div class="table-scroll">
+      <table class="practice-table">
+        <thead><tr>
+          <th class="num-col">N.</th>
+          <th class="w-client">Cliente</th>
+          <th class="w-comune">Comune</th>
+          <th class="w-via">Via</th>
+          <th class="w-practice">Pratica</th>
+          <th class="w-priority">Priorità</th>
+          <th class="w-del"></th>
+        </tr></thead>
+        <tbody id="tbody-pratiche-archiviate"></tbody>
+      </table>
+    </div>
+    <div class="panel-foot">
+      <span>Archivio pratiche concluse</span>
+      <span id="status-pratiche-archiviate">—</span>
+    </div>
+  </div>
+</section>
+
+<section class="view" data-view="candidature">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Candidature di lavoro</h2>
+      <button class="btn blue" id="add-candidatura" type="button">+ Nuova candidatura</button>
+    </div>
+    <div class="table-scroll">
+      <table class="candidature-table">
+        <thead><tr>
+          <th class="num-col">N.</th>
+          <th style="width:24%">Lavoro / Ente</th>
+          <th style="width:14%">Data candidatura</th>
+          <th style="width:18%">Posto</th>
+          <th style="width:31%">Note</th>
+          <th style="width:13%">Proposta economica €</th>
+          <th class="w-del"></th>
+        </tr></thead>
+        <tbody id="tbody-candidature"></tbody>
+      </table>
+    </div>
+    <div class="panel-foot"><span></span><span id="status-candidature">—</span></div>
+  </div>
+</section>
+
+<section class="view" data-view="candidature-archiviate">
+  <div class="panel">
+    <div class="panel-head">
+      <h2><span class="accent-dot"></span>Candidature archiviate</h2>
+      <span class="small-note">Togli il flag per riportare la candidatura tra quelle attive</span>
+    </div>
+    <div class="table-scroll">
+      <table class="candidature-table">
+        <thead><tr>
+          <th class="num-col">N.</th>
+          <th style="width:24%">Lavoro / Ente</th>
+          <th style="width:14%">Data candidatura</th>
+          <th style="width:18%">Posto</th>
+          <th style="width:31%">Note</th>
+          <th style="width:13%">Proposta economica €</th>
+          <th class="w-del"></th>
+        </tr></thead>
+        <tbody id="tbody-candidature-archiviate"></tbody>
+      </table>
+    </div>
+    <div class="panel-foot"><span>Archivio candidature concluse</span><span id="status-candidature-archiviate">—</span></div>
+  </div>
+</section>
 </div>
+
 <script src="./gestionale-v4.js"></script>
-<script>if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(e=>console.warn('Service worker non disponibile',e)))}</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'})
+    .then(reg=>reg.update())
+    .catch(e=>console.warn('Service worker non disponibile',e)));
+}
+</script>
 </body>
 </html>
