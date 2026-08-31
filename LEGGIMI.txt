@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V12
+GESTIONALE REGISTRO LAVORO V13
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,11 +8,34 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-GESTIONE PRATICA V12
-- Informazioni pratica in una scheda separata.
-- Scadenze in una scheda separata.
-- Note pratica a sinistra.
-- Checklist a destra.
-- Note e Checklist sono due schede distinte 50/50 con spazio tra loro.
-- Storia pratica in una scheda separata sotto.
-- Eliminato l'effetto di un'unica tabella continua.
+NOVITÀ V13
+
+DASHBOARD / NUOVA PRATICA
+- Aggiunto “Copia pratica”.
+- Scrivi parte del nome, oggetto, comune o via (es. “base”).
+- Selezioni la pratica trovata.
+- Copia: cliente, comune, via, priorità, pagamento e informazioni catastali.
+- NON copia l’oggetto della pratica.
+- NON copia note, scadenze, checklist o storia.
+
+SCADENZE IN GESTIONE PRATICA
+- Le scadenze non sono più un riquadro separato.
+- Sono sotto Note pratica.
+- Ogni scadenza ha: flag, data di scadenza, motivo.
+- Quando flagghi una scadenza:
+  - sparisce dalle scadenze attive;
+  - sparisce dalla Dashboard / pagina Scadenze;
+  - entra in Storia pratica;
+  - la data in Storia è la data in cui hai messo il flag.
+
+CHECKLIST
+- Tolto “crea checklist vuota”.
+- Nel menu preimpostate c’è “Checklist pulita · 5 voci”.
+- Aggiungendola ottieni 5 righe vuote da compilare.
+- Restano disponibili tutti i modelli creati in “Crea checklist”.
+- In Gestione pratica puoi aggiungere ed eliminare singole voci.
+- “Crea checklist” ora ha:
+  - selezione della pratica destinataria;
+  - pulsante “Invia alla pratica”.
+- Il pulsante salva il modello e ne invia una copia alla pratica selezionata.
+- Nella pratica lavori sulla copia senza modificare il modello generale.

@@ -71,7 +71,14 @@
 <label><span class="field-label">Nome checklist</span><input id="template-name" type="text" placeholder="Es. Geologo"></label>
 <div class="template-editor-head"><div><strong>Voci della checklist</strong><div class="small-note-inline">Nessuna data sulle singole voci</div></div><button class="btn" id="add-template-item" type="button">+ Voce</button></div>
 <div id="template-items" class="template-items"></div>
-<div class="template-savebar"><button class="btn gold" id="save-template" type="button">Salva checklist</button><span id="template-status" class="small-note-inline"></span></div>
+<div class="template-savebar template-savebar-v13">
+  <button class="btn gold" id="save-template" type="button">Salva checklist</button>
+  <span id="template-status" class="small-note-inline"></span>
+  <div class="template-send-v13">
+    <select id="template-target-practice"><option value="">Pratica a cui inviare...</option></select>
+    <button class="btn" id="send-template-to-practice" type="button">Invia alla pratica</button>
+  </div>
+</div>
 </div></div>
 <div class="panel"><div class="panel-head"><h2>Checklist disponibili</h2><span class="small-note" id="template-count">—</span></div><div id="template-list" class="template-list"></div></div>
 </div></section>
