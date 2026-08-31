@@ -260,45 +260,62 @@ function renderManager(){
   const c=currentChecklist();
 
   body.innerHTML=`
-    ${renderPracticeHero(p)}
+    <section class="manager-card-v12 practice-info-card-v12">
+      ${renderPracticeHero(p)}
+    </section>
 
-    <div class="manager-deadlines-block">
-      <div class="manager-section-head">
-        <div class="manager-section-title">Scadenze pratica</div>
+    <section class="manager-card-v12 deadlines-card-v12">
+      <div class="manager-section-head manager-card-head-v12">
+        <div>
+          <div class="manager-card-kicker-v12">Pratica</div>
+          <div class="manager-card-title-v12">Scadenze</div>
+        </div>
         <button class="btn" id="manager-add-deadline" type="button">+ Scadenza</button>
       </div>
-      ${renderManagerDeadlinesEditor(p)}
-    </div>
+      <div class="manager-card-body-v12">
+        ${renderManagerDeadlinesEditor(p)}
+      </div>
+    </section>
 
-    <div class="manager-top-halves-v10 manager-top-halves-v11">
-      <section class="manager-half-v10 checklist-half-v10 checklist-half-v11">
-        <div class="manager-third-head simple-checklist-head-v11">
+    <div class="manager-split-v12">
+      <section class="manager-card-v12 notes-card-v12">
+        <div class="manager-card-head-v12">
+          <div>
+            <div class="manager-card-kicker-v12">Appunti</div>
+            <div class="manager-card-title-v12">Note pratica</div>
+          </div>
+        </div>
+        <div class="manager-card-body-v12 notes-body-v12">
+          <textarea class="manager-notes manager-notes-v12" id="manager-notes" placeholder="Scrivi qui note, richieste, contatti, promemoria...">${esc(p.note)}</textarea>
+        </div>
+      </section>
+
+      <section class="manager-card-v12 checklist-card-v12">
+        <div class="manager-card-head-v12 checklist-card-head-v12">
           ${renderChecklistHeaderSelect(p)}
         </div>
-        <div class="manager-half-body-v10 simple-checklist-body-v11">
+        <div class="manager-card-body-v12 checklist-body-v12">
           ${c?renderChecklistPanel(c):`
             <div class="simple-no-checklist-v11">
               <div class="simple-no-checklist-icon-v11">✓</div>
               <div class="simple-no-checklist-title-v11">Nessuna checklist selezionata</div>
-              <div class="simple-no-checklist-text-v11">Scegli una checklist già aggiunta dal menu sopra, oppure aggiungine una preimpostata qui sotto.</div>
+              <div class="simple-no-checklist-text-v11">Scegli una checklist dal menu oppure aggiungine una preimpostata qui sotto.</div>
             </div>`}
         </div>
-        <div class="manager-half-footer-v10 simple-checklist-footer-v11">
+        <div class="manager-card-footer-v12">
           ${renderChecklistFooter(p)}
-        </div>
-      </section>
-
-      <section class="manager-half-v10 notes-half-v10">
-        <div class="manager-third-head"><h3>Note pratica</h3></div>
-        <div class="manager-half-body-v10">
-          <textarea class="manager-notes manager-notes-v10" id="manager-notes" placeholder="Note della pratica...">${esc(p.note)}</textarea>
         </div>
       </section>
     </div>
 
-    <section class="manager-history-full-v10">
-      <div class="manager-third-head"><h3>Storia pratica</h3></div>
-      <div class="history-full-body-v10">
+    <section class="manager-card-v12 history-card-v12">
+      <div class="manager-card-head-v12">
+        <div>
+          <div class="manager-card-kicker-v12">Cronologia</div>
+          <div class="manager-card-title-v12">Storia pratica</div>
+        </div>
+      </div>
+      <div class="manager-card-body-v12 history-body-v12">
         <div class="timeline timeline-v10">${renderHistory(p)}</div>
       </div>
     </section>`;

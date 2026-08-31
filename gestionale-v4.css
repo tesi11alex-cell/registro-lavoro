@@ -798,3 +798,145 @@ body.auth-pending .wrap{display:none}
   .simple-checklist-close-v11{align-items:flex-start;flex-direction:column}
   .simple-add-row-v11{grid-template-columns:1fr}
 }
+
+
+/* V12 — Gestione pratica a schede separate */
+#manager-body{
+  padding:14px;
+  background:#090d11;
+}
+
+.manager-card-v12{
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--panel);
+  overflow:hidden;
+  margin-bottom:14px;
+}
+
+.practice-info-card-v12 .practice-hero-v9{
+  border-bottom:0!important;
+  background:transparent!important;
+}
+
+.manager-card-head-v12{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:13px 15px;
+  border-bottom:1px solid var(--line2);
+  background:#0d1217;
+}
+
+.manager-card-kicker-v12{
+  font:600 8px 'IBM Plex Mono',monospace;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--faint);
+  margin-bottom:3px;
+}
+
+.manager-card-title-v12{
+  font-size:13px;
+  font-weight:650;
+  color:var(--text);
+}
+
+.manager-card-body-v12{
+  padding:14px 15px;
+}
+
+.manager-card-footer-v12{
+  padding:12px 15px;
+  border-top:1px solid var(--line2);
+  background:#0b0f13;
+}
+
+.manager-split-v12{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  align-items:stretch;
+  margin-bottom:14px;
+}
+
+.manager-split-v12 .manager-card-v12{
+  margin-bottom:0;
+}
+
+.notes-card-v12,
+.checklist-card-v12{
+  min-height:520px;
+  display:flex;
+  flex-direction:column;
+}
+
+.notes-body-v12,
+.checklist-body-v12{
+  flex:1;
+  min-height:0;
+}
+
+.manager-notes-v12{
+  width:100%;
+  min-height:420px!important;
+  height:100%;
+  resize:vertical;
+  background:var(--panel2)!important;
+  border:1px solid var(--line)!important;
+  border-radius:7px!important;
+  padding:12px!important;
+  line-height:1.5;
+}
+
+.checklist-card-head-v12{
+  display:block;
+}
+
+.checklist-card-head-v12 .simple-checklist-selector-v11{
+  grid-template-columns:auto minmax(180px,1fr);
+}
+
+.history-card-v12{
+  margin-bottom:0;
+}
+
+.history-body-v12{
+  min-height:150px;
+}
+
+.history-body-v12 .timeline-v10{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.history-body-v12 .timeline-item-v6{
+  border:1px solid var(--line2);
+  border-radius:7px;
+  background:#0c1116;
+}
+
+@media(max-width:1000px){
+  .manager-split-v12{
+    grid-template-columns:1fr;
+  }
+  .notes-card-v12,
+  .checklist-card-v12{
+    min-height:auto;
+  }
+  .manager-notes-v12{
+    min-height:260px!important;
+  }
+  .history-body-v12 .timeline-v10{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:760px){
+  #manager-body{padding:10px}
+  .manager-card-v12{margin-bottom:10px}
+  .manager-split-v12{gap:10px;margin-bottom:10px}
+  .history-body-v12 .timeline-v10{grid-template-columns:1fr}
+}
