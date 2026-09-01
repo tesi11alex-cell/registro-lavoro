@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V18
+GESTIONALE REGISTRO LAVORO V19
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,21 +8,37 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-MODIFICHE V18
+CHECKLIST V19
+- In alto a sinistra c'è un menu largo “Seleziona checklist / report”.
+- La vista iniziale è il REPORT di tutte le checklist:
+  numero, nome, documenti completati, percentuale e stato.
+- Le checklist nel menu sono numerate:
+  1. Nome checklist
+  2. Nome checklist
+  ecc.
+- Ogni checklist può essere riordinata:
+  - scrivendo direttamente il numero di posizione;
+  - con freccia su;
+  - con freccia giù.
+- Se una checklist viene messa in posizione 1, le altre scalano automaticamente.
+- Nella checklist aperta numero e frecce sono accanto al nome.
 
-TERMINI PRATICA
-- Eliminato il riquadro Termini pratica dalla Gestione.
-- Eliminata anche la voce Scadenze/Termini dal menu.
-- Termine e scadenza si gestiscono dentro Stato pratica e Cronologia.
-- I dati già presenti restano nel database, non vengono cancellati.
+AGGIUNGI CHECKLIST PREIMPOSTATA
+- Spostato in alto.
+- Pulsante “+ Aggiungi checklist preimpostata”.
+- Apre il Registro checklist create.
+- Da lì puoi aggiungere direttamente:
+  - Checklist pulita da 5 voci;
+  - qualsiasi modello creato in Crea checklist.
 
-CHECKLIST
-- Eliminato il flag “Sposta in storia”.
-- Rimane la data.
-- Aggiunto il pulsante “Invia a cronologia”.
-- Se la checklist non è completa viene chiesta conferma prima dell'invio.
+INVIO
+- Data invio in cronologia + pulsante Invia a cronologia sono in fondo alla checklist.
+- Dati Invio / Protocollo centrati nel riquadro.
 
-STATO PRATICA E CRONOLOGIA
-- Sistemato il campo Termine che usciva dal riquadro.
-- I campi ora si adattano alla larghezza della colonna.
-- Tipo, oggetto, data, protocollo, termine, scadenza e tempo residuo restano dentro la scheda.
+LEGA DOCUMENTI
+- Ogni checklist inviata in Cronologia ha il pulsante “Lega documenti”.
+- Puoi collegarla a un'altra checklist già inviata.
+- Esempio: CILA + Progetti CILA.
+- Le checklist collegate ricevono lo stesso colore di contorno nella Cronologia.
+- Puoi collegare più checklist nello stesso gruppo.
+- È disponibile anche “Scollega”.

@@ -1,7 +1,7 @@
 (function(){'use strict';
 const S=window.storage;
 let pratiche=[],candidature=[],templates=[];
-let openPracticeId=null,managerPracticeId='',managerChecklistId='',editingTemplateId='',managerRightPanel='checklist';
+let openPracticeId=null,managerPracticeId='',managerChecklistId='',editingTemplateId='',managerRightPanel='checklist',managerChecklistReport=true;
 const $=id=>document.getElementById(id);
 const tbodyP=$('tbody-pratiche'),tbodyPA=$('tbody-pratiche-archiviate'),tbodyC=$('tbody-candidature'),tbodyCA=$('tbody-candidature-archiviate'),statusP=$('status-pratiche'),statusPA=$('status-pratiche-archiviate'),statusC=$('status-candidature'),statusCA=$('status-candidature-archiviate');
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -13,7 +13,7 @@ function todayISO(){const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1
 async function save(key,data,statusEl){try{const ok=await S.set(key,JSON.stringify(data));if(statusEl)statusEl.textContent=ok?'salvato · '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'errore salvataggio';return ok}catch(e){if(statusEl)statusEl.textContent='errore salvataggio';console.error(e);return false}}
 async function load(key){try{const r=await S.get(key);return r&&r.value?JSON.parse(r.value):[]}catch(e){return[]}}
 function normalizeItem(i){return{id:i?.id||uid(),text:i?.text||'',done:!!i?.done}}
-function normalizeChecklistGroup(c){return{id:c?.id||uid(),name:c?.name||'Checklist',templateId:c?.templateId||'',items:Array.isArray(c?.items)?c.items.map(normalizeItem):[],sent:!!c?.sent,sentAt:c?.sentAt||'',workDate:c?.workDate||c?.sentAt||todayISO(),protocol:c?.protocol||'',protocolDate:c?.protocolDate||'',sendNote:c?.sendNote||''}}
+function normalizeChecklistGroup(c){return{id:c?.id||uid(),name:c?.name||'Checklist',templateId:c?.templateId||'',items:Array.isArray(c?.items)?c.items.map(normalizeItem):[],sent:!!c?.sent,sentAt:c?.sentAt||'',workDate:c?.workDate||c?.sentAt||todayISO(),protocol:c?.protocol||'',protocolDate:c?.protocolDate||'',sendNote:c?.sendNote||'',linkGroup:c?.linkGroup||'',linkColor:Number(c?.linkColor)||0}}
 function normalizeHistory(h){return{id:h?.id||uid(),type:h?.type||'note',checklistId:h?.checklistId||'',title:h?.title||'',date:h?.date||'',protocol:h?.protocol||'',protocolDate:h?.protocolDate||'',note:h?.note||''}}
 function normalizeDeadline(d){return{id:d?.id||uid(),date:d?.date||'',reason:d?.reason||'',done:!!d?.done,completedAt:d?.completedAt||''}}
 function normalizeInfoRow(r){return{id:r?.id||uid(),kind:r?.kind||'Pratica presentata',object:r?.object||'',practiceType:r?.practiceType||'',date:r?.date||'',protocol:r?.protocol||'',termType:r?.termType||'',expiryDate:r?.expiryDate||'',sentToStatus:!!r?.sentToStatus,sentAt:r?.sentAt||''}}
@@ -91,7 +91,7 @@ function remainingText(date){
 }
 
 function sortedDeadlines(){const out=[];pratiche.filter(p=>!p.fatta).forEach(p=>practiceTerms(p).forEach(d=>out.push({practice:p,deadline:d,date:d.date,reason:d.reason||'Termine pratica'})));return out.sort((a,b)=>a.date.localeCompare(b.date))}
-function openManager(id){managerPracticeId=id;managerRightPanel='checklist';const p=pratiche.find(x=>x.id===id&&!x.fatta);managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';renderManager();goTo('gestione')}
+function openManager(id){managerPracticeId=id;managerRightPanel='checklist';managerChecklistReport=true;const p=pratiche.find(x=>x.id===id&&!x.fatta);managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';renderManager();goTo('gestione')}
 function openPracticeContext(id){const p=pratiche.find(x=>x.id===id);if(!p)return;if(p.fatta){goTo('archivio');setOpenPractice(id)}else openManager(id)}
 function renderDashboardPractices(){
   const host=$('dashboard-practices'),active=pratiche.filter(p=>!p.fatta);
@@ -318,6 +318,74 @@ function createPracticeChecklistFromTemplate(p,t){const c={id:uid(),name:uniqueC
 function createBlankFiveChecklist(p){const c={id:uid(),name:uniqueChecklistName(p,'Checklist pulita'),templateId:'',items:Array.from({length:5},()=>({id:uid(),text:'',done:false})),sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;return c}
 function addEmptyChecklistToPractice(p){const raw=prompt('Nome della nuova checklist:','');if(raw===null)return null;const name=raw.trim();if(!name)return null;const c={id:uid(),name:uniqueChecklistName(p,name),templateId:'',items:[],sent:false,sentAt:'',workDate:todayISO(),protocol:'',protocolDate:'',sendNote:''};p.checklists.push(c);managerChecklistId=c.id;return c}
 
+
+function checklistProgress(c){
+  const total=c.items.length,done=c.items.filter(i=>i.done).length;
+  return{total,done,pct:total?Math.round(done/total*100):0};
+}
+function moveChecklistToPosition(p,id,pos){
+  const from=p.checklists.findIndex(c=>c.id===id);if(from<0)return;
+  let to=parseInt(pos,10)-1;
+  if(!Number.isFinite(to))to=from;
+  to=Math.max(0,Math.min(p.checklists.length-1,to));
+  const [item]=p.checklists.splice(from,1);
+  p.checklists.splice(to,0,item);
+}
+function moveChecklistStep(p,id,dir){
+  const from=p.checklists.findIndex(c=>c.id===id);if(from<0)return;
+  const to=dir==='up'?from-1:from+1;
+  if(to<0||to>=p.checklists.length)return;
+  const [item]=p.checklists.splice(from,1);
+  p.checklists.splice(to,0,item);
+}
+function renderChecklistReport(p){
+  if(!p.checklists.length)return`<div class="check-report-empty-v19">Nessuna checklist nella pratica. Usa “Aggiungi checklist preimpostata”.</div>`;
+  return `<div class="check-report-v19">
+    <div class="check-report-head-v19">
+      <div>Report checklist</div>
+      <div>${p.checklists.length} checklist</div>
+    </div>
+    ${p.checklists.map((c,i)=>{
+      const pr=checklistProgress(c);
+      return `<div class="check-report-row-v19 ${c.sent?'sent':''}" data-report-check="${c.id}">
+        <input class="check-report-position-v19" type="number" min="1" max="${p.checklists.length}" value="${i+1}" data-check-position="${c.id}" title="Posizione">
+        <button class="check-report-open-v19" type="button" data-report-open="${c.id}">
+          <strong>${i+1}. ${esc(c.name)}</strong>
+          <span>${pr.done}/${pr.total} · ${pr.pct}%${c.sent?' · in cronologia':''}</span>
+        </button>
+        <div class="check-report-progress-v19"><span style="width:${pr.pct}%"></span></div>
+        <div class="check-report-arrows-v19">
+          <button type="button" data-check-step="up" data-check-id="${c.id}" ${i===0?'disabled':''}>↑</button>
+          <button type="button" data-check-step="down" data-check-id="${c.id}" ${i===p.checklists.length-1?'disabled':''}>↓</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function nextLinkColor(p){
+  const used=new Set(p.checklists.map(c=>Number(c.linkColor)||0).filter(Boolean));
+  for(let i=1;i<=6;i++)if(!used.has(i))return i;
+  return ((used.size)%6)+1;
+}
+function linkChecklists(p,sourceId,targetId){
+  const a=p.checklists.find(c=>c.id===sourceId),b=p.checklists.find(c=>c.id===targetId);
+  if(!a||!b||a.id===b.id)return;
+  const group=a.linkGroup||b.linkGroup||('link-'+uid());
+  const color=a.linkColor||b.linkColor||nextLinkColor(p);
+  const groups=[a.linkGroup,b.linkGroup].filter(Boolean);
+  p.checklists.forEach(c=>{
+    if(c.id===a.id||c.id===b.id||groups.includes(c.linkGroup)){
+      c.linkGroup=group;c.linkColor=color;
+    }
+  });
+}
+function unlinkChecklist(p,id){
+  const c=p.checklists.find(x=>x.id===id);if(!c||!c.linkGroup)return;
+  const group=c.linkGroup;c.linkGroup='';c.linkColor=0;
+  const left=p.checklists.filter(x=>x.linkGroup===group);
+  if(left.length<2)left.forEach(x=>{x.linkGroup='';x.linkColor=0});
+}
+
 function syncHistoryForChecklist(p,c){let h=p.history.find(x=>x.type==='checklist-send'&&x.checklistId===c.id);if(!c.sent){p.history=p.history.filter(x=>!(x.type==='checklist-send'&&x.checklistId===c.id));return}if(!h){h={id:uid(),type:'checklist-send',checklistId:c.id,title:'',date:'',protocol:'',protocolDate:'',note:''};p.history.push(h)}h.title=`Checklist ${c.name} inviata`;h.date=c.sentAt;h.protocol=c.protocol;h.protocolDate=c.protocolDate;h.note=c.sendNote}
 function renderHistory(p){
   const events=p.history.slice();
@@ -330,10 +398,34 @@ function renderHistory(p){
   }));
   events.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   if(!events.length)return'<div class="timeline-empty">Nessun evento registrato.</div>';
-  return events.map(h=>`<div class="timeline-item-v6">${h.type==='checklist-send'?`<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Checklist')}</div><input class="history-date-input" type="date" data-history-checklist="${h.checklistId}" value="${esc(h.date)}"></div>`:`<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Evento')}</div><div class="timeline-date">${formatDate(h.date)}</div></div>`}${h.protocol?`<div class="timeline-protocol">Protocollo: ${esc(h.protocol)}${h.protocolDate?' · '+formatDate(h.protocolDate):''}</div>`:''}${h.note?`<div class="timeline-sub">${esc(h.note)}</div>`:''}</div>`).join('');
+  return events.map(h=>{
+    const linkedChecklist=h.type==='checklist-send'?p.checklists.find(c=>c.id===h.checklistId):null;
+    const linkCls=linkedChecklist?.linkColor?` chronology-link-v19 chronology-link-${linkedChecklist.linkColor}-v19`:'';
+    const otherSent=h.type==='checklist-send'?p.checklists.filter(c=>c.sent&&c.id!==h.checklistId):[];
+    return `<div class="timeline-item-v6${linkCls}">
+      ${h.type==='checklist-send'
+        ? `<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Checklist')}</div><input class="history-date-input" type="date" data-history-checklist="${h.checklistId}" value="${esc(h.date)}"></div>`
+        : `<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Evento')}</div><div class="timeline-date">${formatDate(h.date)}</div></div>`}
+      ${h.protocol?`<div class="timeline-protocol">Protocollo: ${esc(h.protocol)}${h.protocolDate?' · '+formatDate(h.protocolDate):''}</div>`:''}
+      ${h.note?`<div class="timeline-sub">${esc(h.note)}</div>`:''}
+      ${h.type==='checklist-send'?`
+        <div class="timeline-link-tools-v19">
+          ${otherSent.length?`<button class="btn timeline-link-btn-v19" type="button" data-link-docs="${h.checklistId}">Lega documenti</button>`:''}
+          ${linkedChecklist?.linkGroup?`<span class="linked-badge-v19">Documenti collegati</span><button class="unlink-docs-v19" type="button" data-unlink-docs="${h.checklistId}">Scollega</button>`:''}
+        </div>
+        ${otherSent.length?`<div class="link-docs-panel-v19" data-link-panel="${h.checklistId}" hidden>
+          <select data-link-target="${h.checklistId}">
+            <option value="">Scegli checklist da collegare...</option>
+            ${otherSent.map((c,i)=>`<option value="${c.id}">${p.checklists.indexOf(c)+1}. ${esc(c.name)}</option>`).join('')}
+          </select>
+          <button class="btn gold" type="button" data-confirm-link="${h.checklistId}">Collega</button>
+        </div>`:''}
+      `:''}
+    </div>`;
+  }).join('');
 }
 
-function renderProtocolBox(c){if(!c.sent)return'';return`<div class="send-box sent"><div class="send-box-head"><div><div class="send-box-title">Dati invio / protocollo</div><div class="send-box-note">Puoi completare o correggere protocollo e date.</div></div></div><div class="send-grid"><label><span class="field-label">Data invio</span><input id="send-date" type="date" value="${esc(c.sentAt)}"></label><label><span class="field-label">Protocollo</span><input id="send-protocol" type="text" value="${esc(c.protocol)}" placeholder="Es. PG 12345/2026"></label><label><span class="field-label">Data protocollo</span><input id="send-protocol-date" type="date" value="${esc(c.protocolDate)}"></label></div><label class="send-note-field"><span class="field-label">Nota invio</span><textarea id="send-note" placeholder="Nota facoltativa...">${esc(c.sendNote)}</textarea></label><div class="send-actions"><button class="btn" id="reopen-checklist" type="button">Riapri checklist</button><button class="btn gold" id="save-send-data" type="button">Salva dati</button></div></div>`}
+function renderProtocolBox(c){if(!c.sent)return'';return`<div class="send-box sent send-box-centered-v19"><div class="send-box-head"><div><div class="send-box-title">Dati invio / protocollo</div><div class="send-box-note">Puoi completare o correggere protocollo e date.</div></div></div><div class="send-grid"><label><span class="field-label">Data invio</span><input id="send-date" type="date" value="${esc(c.sentAt)}"></label><label><span class="field-label">Protocollo</span><input id="send-protocol" type="text" value="${esc(c.protocol)}" placeholder="Es. PG 12345/2026"></label><label><span class="field-label">Data protocollo</span><input id="send-protocol-date" type="date" value="${esc(c.protocolDate)}"></label></div><label class="send-note-field"><span class="field-label">Nota invio</span><textarea id="send-note" placeholder="Nota facoltativa...">${esc(c.sendNote)}</textarea></label><div class="send-actions"><button class="btn" id="reopen-checklist" type="button">Riapri checklist</button><button class="btn gold" id="save-send-data" type="button">Salva dati</button></div></div>`}
 
 function renderWorkingChecklists(p){const list=p.checklists.filter(c=>!c.sent);if(!list.length)return'<div class="working-empty">Nessuna checklist in lavorazione.</div>';return list.map(c=>{const done=c.items.filter(i=>i.done).length,total=c.items.length;return`<div class="working-check-row" data-working-id="${c.id}"><input class="working-complete-check" type="checkbox" data-working-complete="${c.id}" title="Sposta in storia pratica"><div class="working-check-info"><button type="button" class="working-check-name" data-working-open="${c.id}">${esc(c.name)}</button><div class="working-check-progress">${done}/${total} completate</div></div><input class="working-date" type="date" data-working-date="${c.id}" value="${esc(c.workDate||todayISO())}"></div>`}).join('')}
 
@@ -350,20 +442,28 @@ function renderManagerDeadlinesEditor(p){
 }
 
 function renderChecklistPanel(c){
-  const done=c.items.filter(i=>i.done).length,total=c.items.length,missing=total-done;
-  return `<div class="simple-checklist-v11">
-    <div class="simple-checklist-title-v11">
-      <div>
-        <input id="current-checklist-name" class="simple-checklist-name-v11" type="text" value="${esc(c.name)}" placeholder="Nome checklist">
-        <div class="simple-checklist-summary-v11">${total?`${done} completati · ${missing} mancanti`:'Nessun documento inserito'}${c.sent?' · chiusa il '+formatDate(c.sentAt):''}</div>
+  const p=currentPractice(),index=Math.max(0,p?.checklists.findIndex(x=>x.id===c.id)??0);
+  const pr=checklistProgress(c);
+  return `<div class="simple-checklist-v11 checklist-detail-v19">
+    <div class="simple-checklist-title-v11 checklist-title-row-v19">
+      <div class="checklist-number-name-v19">
+        <input class="checklist-position-v19" id="current-checklist-position" type="number" min="1" max="${p?.checklists.length||1}" value="${index+1}" title="Posizione checklist">
+        <div class="checklist-name-block-v19">
+          <input id="current-checklist-name" class="simple-checklist-name-v11" type="text" value="${esc(c.name)}" placeholder="Nome checklist">
+          <div class="simple-checklist-summary-v11">${pr.total?`${pr.done} completati · ${pr.total-pr.done} mancanti · ${pr.pct}%`:'Nessun documento inserito'}${c.sent?' · in cronologia':''}</div>
+        </div>
+        <div class="checklist-order-buttons-v19">
+          <button type="button" id="checklist-move-up-v19" ${index===0?'disabled':''} title="Sposta su">↑</button>
+          <button type="button" id="checklist-move-down-v19" ${index===(p?.checklists.length||1)-1?'disabled':''} title="Sposta giù">↓</button>
+        </div>
       </div>
       ${!c.sent?'<button class="btn" id="add-check-item" type="button">+ Documento</button>':''}
     </div>
 
-    <div class="simple-progress-v11"><span style="width:${total?Math.round(done/total*100):0}%"></span></div>
+    <div class="simple-progress-v11"><span style="width:${pr.pct}%"></span></div>
 
     <div class="simple-document-list-v11" id="check-list">
-      ${total?c.items.map(i=>`
+      ${pr.total?c.items.map(i=>`
         <div class="simple-document-row-v11 ${i.done?'done':''}" data-check-id="${i.id}">
           <input type="checkbox" data-check-f="done" ${i.done?'checked':''} ${c.sent?'disabled':''}>
           <input type="text" data-check-f="text" value="${esc(i.text)}" placeholder="Documento richiesto" ${c.sent?'readonly':''}>
@@ -371,8 +471,10 @@ function renderChecklistPanel(c){
         </div>`).join(''):'<div class="simple-empty-v11">Questa checklist è vuota. Aggiungi i documenti che ti servono.</div>'}
     </div>
 
+    <div class="checklist-bottom-spacer-v19"></div>
+
     ${!c.sent?`
-      <div class="simple-checklist-close-v18">
+      <div class="simple-checklist-close-v18 checklist-send-bottom-v19">
         <label>
           <span class="field-label">Data invio in cronologia</span>
           <input id="current-checklist-work-date" type="date" value="${esc(c.workDate||todayISO())}">
@@ -387,28 +489,30 @@ function renderChecklistPanel(c){
 }
 
 function renderChecklistHeaderSelect(p){
-  return `<div class="simple-checklist-selector-v11">
-    <div class="simple-selector-label-v11">Checklist</div>
-    <select id="manager-checklist-select">
-      <option value="">Seleziona una checklist...</option>
-      ${p.checklists.map(c=>`<option value="${c.id}" ${c.id===managerChecklistId?'selected':''}>${esc(c.name)}${c.sent?' · in storia':''}</option>`).join('')}
-    </select>
-  </div>`;
-}
-
-function renderChecklistFooter(p){
-  return `<div class="simple-add-checklist-v11">
-    <div class="simple-add-title-v11">Aggiungi checklist preimpostata</div>
-    <div class="simple-add-row-v11">
-      <select id="manager-template-select">
-        <option value="">Scegli una checklist...</option>
-        <option value="__blank5__">Checklist pulita · 5 voci</option>
-        ${templates.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}
+  return `<div class="checklist-toolbar-v19">
+    <div class="checklist-select-wrap-v19">
+      <select id="manager-checklist-select" class="checklist-select-v19">
+        <option value="__report__" ${managerChecklistReport?'selected':''}>Seleziona checklist / report</option>
+        ${p.checklists.map((c,i)=>{const pr=checklistProgress(c);return`<option value="${c.id}" ${!managerChecklistReport&&c.id===managerChecklistId?'selected':''}>${i+1}. ${esc(c.name)} — ${pr.pct}%</option>`}).join('')}
       </select>
-      <button class="btn gold" id="add-template-to-practice" type="button">Aggiungi</button>
+    </div>
+    <button class="btn add-prebuilt-top-v19" id="toggle-template-library-v19" type="button">+ Aggiungi checklist preimpostata</button>
+    <div class="template-library-v19" id="template-library-v19" hidden>
+      <div class="template-library-head-v19">
+        <strong>Registro checklist create</strong>
+        <button type="button" id="close-template-library-v19">✕</button>
+      </div>
+      <button type="button" class="template-library-row-v19" data-add-template-v19="__blank5__">
+        <span><strong>Checklist pulita</strong><small>5 voci vuote</small></span><b>Aggiungi</b>
+      </button>
+      ${templates.map(t=>`<button type="button" class="template-library-row-v19" data-add-template-v19="${t.id}">
+        <span><strong>${esc(t.name)}</strong><small>${t.items.length} voci</small></span><b>Aggiungi</b>
+      </button>`).join('')}
     </div>
   </div>`;
 }
+
+function renderChecklistFooter(p){return'';}
 
 function renderPracticeInfoRows(p){
   const rows=p.infoRows||[];
@@ -489,7 +593,7 @@ function renderManager(){
   const body=$('manager-body'),p=currentPractice();
   if(!p){body.innerHTML='<div class="manager-empty">Seleziona una pratica attiva per aprirla.</div>';return}
   ensureManagerChecklist();
-  const c=currentChecklist();
+  const c=managerChecklistReport?null:currentChecklist();
 
   body.innerHTML=`
     <div class="manager-board-v17 manager-board-v18">
@@ -508,15 +612,7 @@ function renderManager(){
           <div class="checklist-head-controls-v17">${renderChecklistHeaderSelect(p)}</div>
         </div>
         <div class="manager-card-body-v12 checklist-body-v17">
-          ${c?renderChecklistPanel(c):`
-            <div class="simple-no-checklist-v11">
-              <div class="simple-no-checklist-icon-v11">✓</div>
-              <div class="simple-no-checklist-title-v11">Nessuna checklist selezionata</div>
-              <div class="simple-no-checklist-text-v11">Scegli una checklist dal menu oppure aggiungine una preimpostata qui sotto.</div>
-            </div>`}
-        </div>
-        <div class="manager-card-footer-v12">
-          ${renderChecklistFooter(p)}
+          ${managerChecklistReport?renderChecklistReport(p):(c?renderChecklistPanel(c):renderChecklistReport(p))}
         </div>
       </section>
 
@@ -614,7 +710,61 @@ function bindManager(p,c){
     save('pratiche-data',pratiche,statusP||null);renderManager();renderScadenze();
   }));
 
-  const csel=$('manager-checklist-select');if(csel)csel.addEventListener('change',()=>{managerChecklistId=csel.value;renderManager()});
+  const csel=$('manager-checklist-select');if(csel)csel.addEventListener('change',()=>{
+    if(csel.value==='__report__'){managerChecklistReport=true;managerChecklistId=''}
+    else{managerChecklistReport=false;managerChecklistId=csel.value}
+    renderManager();
+  });
+
+  const toggleLibrary=$('toggle-template-library-v19'),library=$('template-library-v19'),closeLibrary=$('close-template-library-v19');
+  if(toggleLibrary&&library)toggleLibrary.addEventListener('click',()=>{library.hidden=!library.hidden});
+  if(closeLibrary&&library)closeLibrary.addEventListener('click',()=>{library.hidden=true});
+  document.querySelectorAll('[data-add-template-v19]').forEach(btn=>btn.addEventListener('click',()=>{
+    const tid=btn.dataset.addTemplateV19;
+    if(tid==='__blank5__')createBlankFiveChecklist(p);
+    else{const t=templates.find(x=>x.id===tid);if(!t)return;createPracticeChecklistFromTemplate(p,t)}
+    managerChecklistReport=false;
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  }));
+
+  document.querySelectorAll('[data-report-open]').forEach(btn=>btn.addEventListener('click',()=>{
+    managerChecklistReport=false;managerChecklistId=btn.dataset.reportOpen;renderManager();
+  }));
+  document.querySelectorAll('[data-check-position]').forEach(inp=>inp.addEventListener('change',()=>{
+    moveChecklistToPosition(p,inp.dataset.checkPosition,inp.value);
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  }));
+  document.querySelectorAll('[data-check-step]').forEach(btn=>btn.addEventListener('click',()=>{
+    moveChecklistStep(p,btn.dataset.checkId,btn.dataset.checkStep);
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  }));
+
+  const currentPos=$('current-checklist-position');if(currentPos&&c)currentPos.addEventListener('change',()=>{
+    moveChecklistToPosition(p,c.id,currentPos.value);
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  });
+  const moveUp=$('checklist-move-up-v19');if(moveUp&&c)moveUp.addEventListener('click',()=>{
+    moveChecklistStep(p,c.id,'up');save('pratiche-data',pratiche,statusP||null);renderManager();
+  });
+  const moveDown=$('checklist-move-down-v19');if(moveDown&&c)moveDown.addEventListener('click',()=>{
+    moveChecklistStep(p,c.id,'down');save('pratiche-data',pratiche,statusP||null);renderManager();
+  });
+
+  document.querySelectorAll('[data-link-docs]').forEach(btn=>btn.addEventListener('click',()=>{
+    const panel=document.querySelector(`[data-link-panel="${btn.dataset.linkDocs}"]`);
+    if(panel)panel.hidden=!panel.hidden;
+  }));
+  document.querySelectorAll('[data-confirm-link]').forEach(btn=>btn.addEventListener('click',()=>{
+    const source=btn.dataset.confirmLink;
+    const sel=document.querySelector(`[data-link-target="${source}"]`);
+    if(!sel?.value)return;
+    linkChecklists(p,source,sel.value);
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  }));
+  document.querySelectorAll('[data-unlink-docs]').forEach(btn=>btn.addEventListener('click',()=>{
+    unlinkChecklist(p,btn.dataset.unlinkDocs);
+    save('pratiche-data',pratiche,statusP||null);renderManager();
+  }));
   const cname=$('current-checklist-name');if(cname&&c){
     cname.addEventListener('input',()=>{c.name=cname.value});
     cname.addEventListener('change',()=>{
@@ -624,20 +774,6 @@ function bindManager(p,c){
       renderManager();
     });
   }
-
-  const addTemplate=$('add-template-to-practice');if(addTemplate)addTemplate.addEventListener('click',()=>{
-    const tid=$('manager-template-select')?.value;
-    if(!tid){alert('Seleziona prima una checklist.');return}
-    if(tid==='__blank5__'){
-      createBlankFiveChecklist(p);
-    }else{
-      const t=templates.find(x=>x.id===tid);
-      if(!t){alert('Checklist non trovata.');return}
-      createPracticeChecklistFromTemplate(p,t);
-    }
-    save('pratiche-data',pratiche,statusP||null);
-    renderManager();
-  });
 
   const addDeadline=$('manager-add-deadline');if(addDeadline)addDeadline.addEventListener('click',()=>{
     p.deadlines.push({id:uid(),date:'',reason:'',done:false,completedAt:''});
@@ -690,7 +826,7 @@ function bindManager(p,c){
     if(!confirm(`Eliminare la checklist “${c.name}” da questa pratica?`))return;
     p.checklists=p.checklists.filter(x=>x.id!==c.id);
     p.history=p.history.filter(h=>h.checklistId!==c.id);
-    managerChecklistId=p.checklists.find(x=>!x.sent)?.id||p.checklists[0]?.id||'';
+    managerChecklistId='';managerChecklistReport=true;
     save('pratiche-data',pratiche,statusP||null);renderManager();
   });
 
@@ -705,7 +841,7 @@ function bindManager(p,c){
 }
 
 $('practice-manager-select').addEventListener('change',e=>{
-  managerPracticeId=e.target.value;managerRightPanel='checklist';
+  managerPracticeId=e.target.value;managerRightPanel='checklist';managerChecklistReport=true;
   const p=currentPractice();
   managerChecklistId=p?.checklists?.find(c=>!c.sent)?.id||p?.checklists?.[0]?.id||'';
   renderManager();
