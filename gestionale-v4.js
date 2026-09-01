@@ -342,7 +342,7 @@ function renderChecklistReport(p){
   if(!p.checklists.length)return`<div class="check-report-empty-v19">Nessuna checklist nella pratica. Usa “Aggiungi checklist preimpostata”.</div>`;
   return `<div class="check-report-v19">
     <div class="check-report-head-v19">
-      <div>Report checklist</div>
+      <div>Riepilogo checklist</div>
       <div>${p.checklists.length} checklist</div>
     </div>
     ${p.checklists.map((c,i)=>{
@@ -394,20 +394,33 @@ function renderHistory(p){
     id:'deadline-'+d.id,type:'deadline-complete',deadlineId:d.id,title:d.reason||'Scadenza completata',date:d.completedAt,protocol:'',protocolDate:'',note:d.date?`Scadenza prevista: ${formatDate(d.date)}`:''
   }));
   (p.infoRows||[]).filter(r=>r.sentToStatus&&r.sentAt).forEach(r=>events.push({
-    id:'info-'+r.id,type:'info-status',title:r.object||r.kind||'Aggiornamento pratica',date:r.sentAt,protocol:r.protocol||'',protocolDate:r.date||'',note:[r.kind,r.practiceType].filter(Boolean).join(' · ')
+    id:'info-'+r.id,type:'info-status',infoRowId:r.id,title:r.object||r.kind||'Aggiornamento pratica',date:r.sentAt,protocol:r.protocol||'',protocolDate:r.date||'',note:[r.kind,r.practiceType].filter(Boolean).join(' · ')
   }));
   events.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   if(!events.length)return'<div class="timeline-empty">Nessun evento registrato.</div>';
+
   return events.map(h=>{
     const linkedChecklist=h.type==='checklist-send'?p.checklists.find(c=>c.id===h.checklistId):null;
     const linkCls=linkedChecklist?.linkColor?` chronology-link-v19 chronology-link-${linkedChecklist.linkColor}-v19`:'';
     const otherSent=h.type==='checklist-send'?p.checklists.filter(c=>c.sent&&c.id!==h.checklistId):[];
+
     return `<div class="timeline-item-v6${linkCls}">
-      ${h.type==='checklist-send'
-        ? `<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Checklist')}</div><input class="history-date-input" type="date" data-history-checklist="${h.checklistId}" value="${esc(h.date)}"></div>`
-        : `<div class="timeline-top"><div class="timeline-title">${esc(h.title||'Evento')}</div><div class="timeline-date">${formatDate(h.date)}</div></div>`}
+      <div class="timeline-top">
+        <div class="timeline-title">${esc(h.title||'Evento')}</div>
+        <div class="timeline-right-v20">
+          ${h.type==='checklist-send'
+            ? `<input class="history-date-input" type="date" data-history-checklist="${h.checklistId}" value="${esc(h.date)}">`
+            : `<div class="timeline-date">${formatDate(h.date)}</div>`}
+          ${h.type==='info-status'?`
+            <button class="timeline-edit-v20" type="button" data-history-info-edit="${h.infoRowId}">Modifica</button>
+            <button class="timeline-delete-v20" type="button" data-history-info-delete="${h.infoRowId}" title="Elimina">✕</button>
+          `:''}
+        </div>
+      </div>
+
       ${h.protocol?`<div class="timeline-protocol">Protocollo: ${esc(h.protocol)}${h.protocolDate?' · '+formatDate(h.protocolDate):''}</div>`:''}
       ${h.note?`<div class="timeline-sub">${esc(h.note)}</div>`:''}
+
       ${h.type==='checklist-send'?`
         <div class="timeline-link-tools-v19">
           ${otherSent.length?`<button class="btn timeline-link-btn-v19" type="button" data-link-docs="${h.checklistId}">Lega documenti</button>`:''}
@@ -416,7 +429,7 @@ function renderHistory(p){
         ${otherSent.length?`<div class="link-docs-panel-v19" data-link-panel="${h.checklistId}" hidden>
           <select data-link-target="${h.checklistId}">
             <option value="">Scegli checklist da collegare...</option>
-            ${otherSent.map((c,i)=>`<option value="${c.id}">${p.checklists.indexOf(c)+1}. ${esc(c.name)}</option>`).join('')}
+            ${otherSent.map(c=>`<option value="${c.id}">${p.checklists.indexOf(c)+1}. ${esc(c.name)}</option>`).join('')}
           </select>
           <button class="btn gold" type="button" data-confirm-link="${h.checklistId}">Collega</button>
         </div>`:''}
@@ -492,7 +505,7 @@ function renderChecklistHeaderSelect(p){
   return `<div class="checklist-toolbar-v19">
     <div class="checklist-select-wrap-v19">
       <select id="manager-checklist-select" class="checklist-select-v19">
-        <option value="__report__" ${managerChecklistReport?'selected':''}>Seleziona checklist / report</option>
+        <option value="__report__" ${managerChecklistReport?'selected':''}>Seleziona checklist</option>
         ${p.checklists.map((c,i)=>{const pr=checklistProgress(c);return`<option value="${c.id}" ${!managerChecklistReport&&c.id===managerChecklistId?'selected':''}>${i+1}. ${esc(c.name)} — ${pr.pct}%</option>`}).join('')}
       </select>
     </div>
@@ -515,12 +528,12 @@ function renderChecklistHeaderSelect(p){
 function renderChecklistFooter(p){return'';}
 
 function renderPracticeInfoRows(p){
-  const rows=p.infoRows||[];
+  const rows=(p.infoRows||[]).filter(r=>!r.sentToStatus);
   const kinds=['Pratica presentata','Integrazione richiesta','Integrazione inviata','Parere / nulla osta','Protocollo','Sopralluogo','Comunicazione','Altro'];
-  if(!rows.length)return'<div class="practice-info-empty-v14">Nessuna informazione inserita. Premi “+ Informazione”.</div>';
+  if(!rows.length)return'<div class="practice-info-empty-v20">Nessuno stato in lavorazione. Premi “+ Stato pratica” per aggiungerne uno.</div>';
   return rows.map(r=>{
     const expiry=r.expiryDate;
-    return `<div class="practice-info-row-v14 ${r.sentToStatus?'sent-status-v15':''}" data-info-row="${r.id}">
+    return `<div class="practice-info-row-v14" data-info-row="${r.id}">
       <div class="practice-info-main-v14">
         <select data-info-f="kind">${kinds.map(k=>`<option value="${esc(k)}" ${r.kind===k?'selected':''}>${esc(k)}</option>`).join('')}</select>
         <input type="text" data-info-f="object" value="${esc(r.object)}" placeholder="Oggetto / descrizione">
@@ -540,10 +553,8 @@ function renderPracticeInfoRows(p){
         ${r.termType?`<label><span>Scadenza</span><input type="date" data-info-f="expiryDate" value="${esc(expiry)}" ${r.termType!=='custom'?'readonly':''}></label>`:''}
         ${expiry?`<div class="practice-info-remaining-v14"><span>Tempo residuo</span><strong>${esc(remainingText(expiry))}</strong></div>`:''}
       </div>
-      <div class="info-status-action-v15">
-        ${r.sentToStatus
-          ? `<span class="status-sent-v15">Inviata a stato pratica${r.sentAt?' · '+formatDate(r.sentAt):''}</span>`
-          : `<button class="btn" type="button" data-info-send="${r.id}">Invia a stato pratica</button>`}
+      <div class="info-status-action-v20">
+        <button class="btn gold" type="button" data-info-send="${r.id}">Invia a cronologia</button>
       </div>
     </div>`;
   }).join('');
@@ -686,6 +697,22 @@ function bindManager(p,c){
     const r=p.infoRows.find(x=>x.id===btn.dataset.infoSend);if(!r)return;
     r.sentToStatus=true;r.sentAt=todayISO();
     save('pratiche-data',pratiche,statusP||null);renderManager();
+  }));
+
+  document.querySelectorAll('[data-history-info-edit]').forEach(btn=>btn.addEventListener('click',()=>{
+    const r=p.infoRows.find(x=>x.id===btn.dataset.historyInfoEdit);if(!r)return;
+    r.sentToStatus=false;
+    r.sentAt='';
+    save('pratiche-data',pratiche,statusP||null);
+    renderManager();
+  }));
+
+  document.querySelectorAll('[data-history-info-delete]').forEach(btn=>btn.addEventListener('click',()=>{
+    const r=p.infoRows.find(x=>x.id===btn.dataset.historyInfoDelete);if(!r)return;
+    if(!confirm(`Eliminare definitivamente “${r.object||r.kind||'questo stato'}” dalla cronologia?`))return;
+    p.infoRows=p.infoRows.filter(x=>x.id!==r.id);
+    save('pratiche-data',pratiche,statusP||null);
+    renderManager();
   }));
 
   const addInfo=$('manager-add-info');if(addInfo)addInfo.addEventListener('click',()=>{

@@ -1952,3 +1952,61 @@ body.auth-pending .wrap{display:none}
   .checklist-order-buttons-v19{grid-column:2;justify-content:flex-start}
   .link-docs-panel-v19{grid-template-columns:1fr}
 }
+
+
+/* V20 — Stato inviato sparisce e si gestisce dalla cronologia */
+.practice-info-empty-v20{
+  padding:24px 10px;
+  text-align:center;
+  color:var(--faint);
+  font-size:10px;
+}
+.info-status-action-v20{
+  display:flex;
+  justify-content:flex-end;
+  padding-top:9px;
+}
+
+.timeline-right-v20{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.timeline-edit-v20{
+  border:0;
+  background:transparent;
+  color:var(--dim);
+  padding:3px 4px;
+  font-size:8.5px;
+  text-decoration:underline;
+}
+.timeline-edit-v20:hover{color:var(--text)}
+.timeline-delete-v20{
+  width:24px;
+  height:24px;
+  border:1px solid transparent;
+  border-radius:5px;
+  background:transparent;
+  color:var(--faint);
+  padding:0;
+}
+.timeline-delete-v20:hover{
+  color:var(--red);
+  border-color:var(--red);
+  background:var(--redSoft);
+}
+
+/* Evita che le azioni allarghino la colonna destra */
+.status-card-v17 .timeline-top{
+  gap:8px;
+  align-items:flex-start;
+}
+.status-card-v17 .timeline-title{
+  min-width:0;
+  flex:1;
+}
+.status-card-v17 .timeline-right-v20{
+  flex:0 0 auto;
+}

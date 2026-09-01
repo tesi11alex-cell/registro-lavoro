@@ -1,4 +1,4 @@
-GESTIONALE REGISTRO LAVORO V19
+GESTIONALE REGISTRO LAVORO V20
 
 SOSTITUISCI SU GITHUB:
 - index.html
@@ -8,37 +8,24 @@ SOSTITUISCI SU GITHUB:
 
 NON serve sostituire auth-v4.js.
 
-CHECKLIST V19
-- In alto a sinistra c'è un menu largo “Seleziona checklist / report”.
-- La vista iniziale è il REPORT di tutte le checklist:
-  numero, nome, documenti completati, percentuale e stato.
-- Le checklist nel menu sono numerate:
-  1. Nome checklist
-  2. Nome checklist
-  ecc.
-- Ogni checklist può essere riordinata:
-  - scrivendo direttamente il numero di posizione;
-  - con freccia su;
-  - con freccia giù.
-- Se una checklist viene messa in posizione 1, le altre scalano automaticamente.
-- Nella checklist aperta numero e frecce sono accanto al nome.
+CHECKLIST
+- Tolta la scritta “/ report”.
+- Il menu ora dice semplicemente “Seleziona checklist”.
+- La vista generale si chiama “Riepilogo checklist”.
 
-AGGIUNGI CHECKLIST PREIMPOSTATA
-- Spostato in alto.
-- Pulsante “+ Aggiungi checklist preimpostata”.
-- Apre il Registro checklist create.
-- Da lì puoi aggiungere direttamente:
-  - Checklist pulita da 5 voci;
-  - qualsiasi modello creato in Crea checklist.
+STATO PRATICA E CRONOLOGIA
+- Quando premi “Invia a cronologia”, lo stato scompare dalla parte alta.
+- La parte Stato pratica mostra quindi solo le voci ancora in lavorazione.
+- Lo stato inviato compare esclusivamente nella Cronologia pratica.
+- In Cronologia ogni stato inviato ha:
+  - Modifica
+  - ✕ Elimina
 
-INVIO
-- Data invio in cronologia + pulsante Invia a cronologia sono in fondo alla checklist.
-- Dati Invio / Protocollo centrati nel riquadro.
+MODIFICA
+- Premendo “Modifica” la voce viene tolta momentaneamente dalla Cronologia.
+- Torna nella parte Stato pratica, dove puoi modificarla.
+- Quando hai finito premi di nuovo “Invia a cronologia”.
 
-LEGA DOCUMENTI
-- Ogni checklist inviata in Cronologia ha il pulsante “Lega documenti”.
-- Puoi collegarla a un'altra checklist già inviata.
-- Esempio: CILA + Progetti CILA.
-- Le checklist collegate ricevono lo stesso colore di contorno nella Cronologia.
-- Puoi collegare più checklist nello stesso gruppo.
-- È disponibile anche “Scollega”.
+ELIMINA
+- Premendo ✕ viene chiesta conferma.
+- La voce viene poi eliminata definitivamente.
